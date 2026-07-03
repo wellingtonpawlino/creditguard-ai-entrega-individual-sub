@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+
+# Ambientes virtuais
+venv/
+.venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Artefatos ML
+*.pkl
+*.joblib
+
+# VS Code
+.vscode/
+
+# Dados locais
+Dados/raw/*.csv
+Dados/processed/*.csv
+Dados/abt/*.csv
