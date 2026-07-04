@@ -1,0 +1,136 @@
+DEFINIÇÃO DO PROBLEMA DE NEGÓCIO
+
+ProScore Analytics
+
+CreditGuard AI
+Sistema Inteligente de Predição de Inadimplência para Concessão de Crédito
+
+====================================================================
+
+1. CONTEXTO
+
+O mercado de crédito desempenha um papel fundamental na economia, permitindo que pessoas e empresas tenham acesso a recursos financeiros para consumo, investimentos e desenvolvimento de atividades.
+
+Para instituições financeiras, a concessão de crédito representa uma importante fonte de receita, mas também envolve riscos significativos relacionados à inadimplência dos clientes.
+
+Com o aumento do volume de solicitações de crédito e da quantidade de dados disponíveis, tornou-se essencial utilizar soluções analíticas capazes de apoiar a tomada de decisão, reduzindo riscos e aumentando a eficiência operacional.
+
+Nesse contexto, a ProScore Analytics propõe o desenvolvimento da solução CreditGuard AI, utilizando técnicas de Machine Learning para apoiar a análise de risco e a concessão de crédito de forma mais assertiva.
+
+====================================================================
+
+2. PROBLEMA DE NEGÓCIO
+
+A concessão inadequada de crédito representa um dos principais desafios enfrentados pelas instituições financeiras.
+
+A aprovação de clientes com alta probabilidade de inadimplência gera perdas financeiras, aumento das provisões para crédito e compromete a rentabilidade da carteira.
+
+Por outro lado, políticas excessivamente restritivas podem impedir a aprovação de clientes com bom potencial de pagamento, reduzindo oportunidades de negócio e limitando o crescimento da operação.
+
+Além disso, o elevado volume de solicitações torna cada vez mais difícil depender exclusivamente de análises manuais para tomada de decisão.
+
+Diante desse cenário, torna-se necessário desenvolver mecanismos capazes de identificar com maior precisão os clientes com risco elevado de inadimplência, permitindo uma concessão de crédito mais segura e eficiente.
+
+====================================================================
+
+3. DOR DO NEGÓCIO
+
+As principais dores enfrentadas pela instituição são:
+
+• Aumento dos índices de inadimplência;
+
+• Perdas financeiras decorrentes de operações não recuperadas;
+
+• Tempo elevado para análise e aprovação de crédito;
+
+• Baixa escalabilidade dos processos manuais;
+
+• Dificuldade em identificar padrões complexos de risco;
+
+• Necessidade de atender requisitos regulatórios e de governança.
+
+====================================================================
+
+4. OBJETIVO
+
+Desenvolver e avaliar um modelo de Machine Learning capaz de prever a probabilidade de inadimplência de clientes antes da concessão de crédito.
+
+A solução deverá apoiar a área de risco na tomada de decisão, aumentando a precisão das análises, reduzindo a exposição da instituição a perdas financeiras e promovendo maior eficiência operacional no processo de concessão de crédito.
+
+====================================================================
+
+5. SOLUÇÃO PROPOSTA
+
+A ProScore Analytics propõe o desenvolvimento do CreditGuard AI, uma solução baseada em Machine Learning capaz de analisar dados cadastrais, financeiros e históricos de crédito disponíveis na base de dados utilizada no projeto.
+
+A partir dessa análise, será gerado um score de risco que poderá servir como apoio ao processo de aprovação de crédito, permitindo decisões mais rápidas, consistentes e orientadas por dados.
+
+O modelo será treinado para identificar padrões associados à inadimplência, auxiliando a instituição financeira na redução de riscos e na melhoria da qualidade de sua carteira de crédito.
+
+====================================================================
+
+6. BENEFÍCIOS ESPERADOS
+
+Com a implementação da solução, espera-se alcançar:
+
+• Redução da taxa de inadimplência;
+
+• Melhoria da qualidade da carteira de crédito;
+
+• Redução das perdas financeiras;
+
+• Maior eficiência operacional;
+
+• Redução do tempo de análise de crédito;
+
+• Maior assertividade na tomada de decisão;
+
+• Melhor experiência para o cliente;
+
+• Maior conformidade regulatória.
+
+====================================================================
+
+7. MÉTRICAS DE SUCESSO
+
+7.1 Métricas Técnicas
+
+• ROC-AUC;
+
+• Precision;
+
+• Recall;
+
+• F1-Score;
+
+• Índice de Gini;
+
+• KS (Kolmogorov-Smirnov).
+
+7.2 Métricas de Negócio
+
+• Taxa de inadimplência;
+
+• Percentual de aprovação de crédito;
+
+• Perdas financeiras evitadas;
+
+• Tempo médio de análise das propostas;
+
+• Retorno sobre investimento (ROI) da solução.
+
+====================================================================
+
+8. PERGUNTA DE NEGÓCIO
+
+É possível utilizar técnicas de Machine Learning para prever a probabilidade de inadimplência de um cliente antes da concessão do crédito, permitindo decisões mais seguras, rápidas e rentáveis para a instituição financeira?
+
+====================================================================
+
+9. ALINHAMENTO COM O PROJETO
+
+Este projeto utilizará a base de dados Home Credit Default Risk para simular um cenário real de concessão de crédito.
+
+Seguindo a metodologia CRISP-DM, serão realizadas as etapas de entendimento do negócio, entendimento dos dados, preparação dos dados, modelagem, avaliação dos resultados e proposta de implantação da solução.
+
+O objetivo final é demonstrar como técnicas de Ciência de Dados, Machine Learning e MLOps podem ser aplicadas para resolver problemas reais de negócio relacionados à gestão de risco de crédito.
