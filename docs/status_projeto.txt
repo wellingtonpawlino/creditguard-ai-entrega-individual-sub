@@ -1,0 +1,163 @@
+STATUS ATUAL DO PROJETO
+
+Projeto:
+ProScore Analytics
+
+Solução:
+CreditGuard AI
+
+Objetivo:
+Desenvolver um modelo de Machine Learning capaz de prever a probabilidade de inadimplência de clientes antes da concessão de crédito.
+
+====================================================================
+
+METODOLOGIA UTILIZADA
+
+O projeto está sendo desenvolvido seguindo a metodologia CRISP-DM:
+
+[✓] Business Understanding
+[✓] Data Understanding
+[✓] Data Preparation
+[✓] ABT V1
+[✓] Modelo Baseline
+[ ] Modelagem Avançada
+[ ] Evaluation
+[ ] Deployment / MLOps
+
+====================================================================
+
+ONDE ESTAMOS AGORA
+
+O projeto encontra-se na transição entre as fases de Data Preparation e Modeling.
+
+A primeira versão da ABT já foi construída e o primeiro modelo baseline foi treinado com sucesso.
+
+Atualmente estamos avaliando o desempenho inicial do modelo e preparando os próximos ciclos de otimização.
+
+====================================================================
+
+O QUE FOI FEITO ATÉ AGORA
+
+BUSINESS UNDERSTANDING
+
+- Definição do problema de negócio;
+- Definição dos objetivos da solução;
+- Identificação das dores do negócio;
+- Definição das métricas de sucesso;
+- Formulação da pergunta de negócio.
+
+DATA UNDERSTANDING
+
+- Download e organização da base Home Credit Default Risk;
+- Identificação da variável TARGET;
+- Análise da estrutura da base;
+- Análise dos tipos de dados;
+- Identificação de valores ausentes;
+- Análise das variáveis categóricas;
+- Análise dos scores externos;
+- Documentação das principais descobertas.
+
+DATA PREPARATION
+
+- Seleção das variáveis relevantes;
+- Construção da ABT V1;
+- Tratamento dos valores ausentes;
+- Investigação da variável DAYS_EMPLOYED;
+- Investigação das variáveis EXT_SOURCE;
+- Criação de indicadores de ausência;
+- Tratamento de variáveis categóricas;
+- Construção da ABT limpa.
+
+Resultado da ABT:
+
+- 307.511 registros;
+- 30 variáveis;
+- 0 valores ausentes.
+
+====================================================================
+
+O QUE ESTAMOS TENTANDO PREVER
+
+Variável alvo:
+
+TARGET
+
+TARGET = 0
+Cliente adimplente.
+
+TARGET = 1
+Cliente inadimplente.
+
+Objetivo:
+
+Prever a probabilidade de um cliente se tornar inadimplente antes da concessão do crédito.
+
+====================================================================
+
+MODELO UTILIZADO
+
+Modelo Baseline:
+
+Logistic Regression
+
+Motivos da escolha:
+
+- Simplicidade;
+- Interpretabilidade;
+- Ampla utilização em Credit Scoring;
+- Capacidade de produzir probabilidades;
+- Utilizado como linha de base para comparação com modelos futuros.
+
+====================================================================
+
+RESULTADOS OBTIDOS
+
+Métricas:
+
+Accuracy  : 91,92%
+Precision : 66,67%
+Recall    : 0,04%
+F1-Score  : 0,08%
+ROC-AUC   : 0,693
+
+====================================================================
+
+INTERPRETAÇÃO DOS RESULTADOS
+
+A Accuracy elevada já era esperada devido ao forte desbalanceamento da base.
+
+A principal métrica analisada é o ROC-AUC.
+
+Resultado:
+
+ROC-AUC = 0,693
+
+Esse valor demonstra que o modelo possui capacidade de diferenciar clientes adimplentes e inadimplentes acima do acaso.
+
+O Recall extremamente baixo indica que o modelo ainda apresenta dificuldades para identificar clientes inadimplentes.
+
+Por esse motivo serão avaliadas estratégias para melhorar a identificação da classe minoritária.
+
+====================================================================
+
+CONCLUSÃO ATUAL
+
+Até o momento o projeto demonstrou que:
+
+- Existe sinal preditivo nos dados;
+- As variáveis selecionadas possuem valor para o problema;
+- A ABT construída é consistente;
+- O modelo baseline estabelece uma linha de base válida para futuras comparações.
+
+O projeto encontra-se aproximadamente entre 55% e 60% concluído.
+
+====================================================================
+
+PRÓXIMOS PASSOS
+
+- Melhorar o tratamento do desbalanceamento das classes;
+- Avaliar novos algoritmos de Machine Learning;
+- Comparar métricas entre modelos;
+- Selecionar o modelo final;
+- Desenvolver a camada de MLOps;
+- Realizar deploy da solução CreditGuard AI.
