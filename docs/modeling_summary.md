@@ -56,9 +56,11 @@ Construir modelos capazes de identificar clientes com maior probabilidade de ina
 - F1-Score
 - ROC-AUC
 
-A métrica principal considerada foi **ROC-AUC**.
+A avaliação dos modelos considerou múltiplas métricas de classificação.
 
-O **Recall** recebeu atenção especial devido à necessidade de identificar clientes inadimplentes.
+Devido ao forte desbalanceamento da variável TARGET (8,07% de inadimplentes), a métrica **Recall** recebeu atenção especial durante a análise, pois representa a capacidade do modelo em identificar clientes potencialmente inadimplentes.
+
+A métrica **ROC-AUC** foi utilizada para avaliar a capacidade geral de discriminação dos modelos.
 
 ---
 
@@ -84,4 +86,13 @@ Estabelecer uma linha de base para comparação com modelos futuros.
 [[56537     1]
  [ 4963     2]]
 
- 
+
+Modelo Candidato para Produção
+Até o momento, o modelo XGBoost Balanced apresentou o melhor equilíbrio entre capacidade de discriminação e identificação de clientes inadimplentes.
+Resultados obtidos:
+
+Recall: 65,68%
+ROC-AUC: 0,751
+
+Considerando o objetivo do CreditGuard AI de reduzir a concessão de crédito para clientes com alta probabilidade de inadimplência, a métrica Recall foi priorizada na tomada de decisão.
+Dessa forma, o XGBoost Balanced é atualmente o principal candidato para implantação em produção, permanecendo sujeito à comparação final com os modelos Random Forest e LightGBM ainda em avaliação pela equipe.
