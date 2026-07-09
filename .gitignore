@@ -1,34 +1,9 @@
-# Python
-__pycache__/
-*.pyc
-
-# Ambientes virtuais
+# Virtual Environments
+creditguard-env/
 venv/
 .venv/
 env/
 
-# Jupyter
-.ipynb_checkpoints/
-
-# Artefatos ML
-*.pkl
-*.joblib
-
-# VS Code
-.vscode/
-
-# Dados locais
-Dados/raw/*.csv
-Dados/processed/*.csv
-Dados/abt/*.csv
-
-
-
-# Virtual Environments
-creditguard-env/
-.venv/
-venv/
-
 # Python
 __pycache__/
 *.pyc
@@ -36,12 +11,14 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
-# Modelos
+# Model Artifacts
 *.pkl
 *.joblib
 
 # VS Code
 .vscode/
 
-# Dados brutos
+# Data
 Dados/raw/*.csv
+Dados/processed/*.csv
+Dados/abt/*.csv
