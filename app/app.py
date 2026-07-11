@@ -1,11 +1,46 @@
-
-import os
-import streamlit as st
+import faulthandler
 import sys
+import os
+
+faulthandler.enable(file=sys.stderr, all_threads=True)
+
+sys.stderr.write("[APP] faulthandler ativo\n")
+sys.stderr.flush()
+
+sys.stderr.write("[APP] importando streamlit\n")
+sys.stderr.flush()
+import streamlit as st
+
+sys.stderr.write("[APP] importando predict\n")
+sys.stderr.flush()
 sys.path.append("/app")
-from Model.predict import predict
+from Model.predict import predict, load_model, load_features
+
+sys.stderr.write("[APP] importando log_prediction\n")
+sys.stderr.flush()
 from utils.db import log_prediction
 
+sys.stderr.write("[APP] imports concluidos\n")
+sys.stderr.flush()
+
+
+@st.cache_resource
+def _warm_up():
+    sys.stderr.write("[APP] cache_resource: carregando modelo...\n")
+    sys.stderr.flush()
+    m = load_model()
+    sys.stderr.write(f"[APP] cache_resource: modelo ok — {type(m)}\n")
+    sys.stderr.flush()
+    f = load_features()
+    sys.stderr.write(f"[APP] cache_resource: {len(f)} features ok\n")
+    sys.stderr.flush()
+    return True
+
+
+_warm_up()
+
+sys.stderr.write("[APP] modelo pre-carregado\n")
+sys.stderr.flush()
 
 
 st.set_page_config(
@@ -89,10 +124,11 @@ ext_source_3 = st.number_input(
 
 if st.button("Analisar Cliente"):
 
+    sys.stderr.write("[APP] botao clicado — iniciando analise\n")
+    sys.stderr.flush()
+
     st.success("✅ Análise executada")
 
-    # TESTE DE INTEGRAÇÃO COM O XGBOOST
-    
     inputs = {
         "AMT_INCOME_TOTAL": amt_income,
         "AMT_CREDIT": amt_credit,
@@ -103,21 +139,35 @@ if st.button("Analisar Cliente"):
         "EXT_SOURCE_2": ext_source_2,
         "EXT_SOURCE_3": ext_source_3,
     }
+
+    sys.stderr.write(f"[APP] inputs montados: {inputs}\n")
+    sys.stderr.flush()
+
+    sys.stderr.write("[APP] chamando predict(inputs)\n")
+    sys.stderr.flush()
+
     resultado = predict(inputs)
+
+    sys.stderr.write(f"[APP] predict() retornou: {resultado}\n")
+    sys.stderr.flush()
+
+    sys.stderr.write("[APP] chamando log_prediction()\n")
+    sys.stderr.flush()
+
     log_prediction(inputs, resultado, model_version=os.environ.get("MODEL_VERSION", "v1"))
 
+    sys.stderr.write("[APP] log_prediction() concluido\n")
+    sys.stderr.flush()
 
     probabilidade = resultado["probability"] * 100
     classe = resultado["prediction"]
 
     st.divider()
     st.subheader("Resultado do Modelo")
-    
+
     with st.expander("Detalhes Técnicos do Modelo"):
         st.json(resultado)
 
-
-    # MANTER A LÓGICA ATUAL TEMPORARIAMENTE
     if classe == 1:
 
         st.metric(
@@ -167,3 +217,6 @@ if st.button("Analisar Cliente"):
         st.write(f"Probabilidade de Inadimplência: {probabilidade:.2f}%")
         st.write("Classificação: BAIXO RISCO")
         st.write("Ação: Aprovação automática")
+
+    sys.stderr.write("[APP] renderizacao concluida — sem crash\n")
+    sys.stderr.flush()
