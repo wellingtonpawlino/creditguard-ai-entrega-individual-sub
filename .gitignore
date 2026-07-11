@@ -22,3 +22,5 @@ __pycache__/
 Dados/raw/*.csv
 Dados/processed/*.csv
 Dados/abt/*.csv
+Dados/clean_data.csv
+Dados/abt.csv
