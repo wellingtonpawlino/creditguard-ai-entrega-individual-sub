@@ -112,3 +112,4 @@ websocket-client==1.9.0
 widgetsnbextension==4.0.15
 xgboost==3.3.0
 minio
+psycopg2-binary

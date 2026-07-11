@@ -12,8 +12,14 @@ services:
       - MINIO_ACCESS_KEY=minioadmin
       - MINIO_SECRET_KEY=minioadmin
       - MODEL_VERSION=v1
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=creditguard
+      - POSTGRES_USER=creditguard
+      - POSTGRES_PASSWORD=creditguard
     depends_on:
       minio:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
 
   minio:
@@ -49,5 +55,24 @@ services:
       echo 'Buckets criados com sucesso.'
       "
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: creditguard-postgres
+    environment:
+      - POSTGRES_DB=creditguard
+      - POSTGRES_USER=creditguard
+      - POSTGRES_PASSWORD=creditguard
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U creditguard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   minio_data:
+  postgres_data:

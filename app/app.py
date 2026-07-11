@@ -1,8 +1,10 @@
 
+import os
 import streamlit as st
 import sys
 sys.path.append("/app")
 from Model.predict import predict
+from utils.db import log_prediction
 
 
 
@@ -91,7 +93,7 @@ if st.button("Analisar Cliente"):
 
     # TESTE DE INTEGRAÇÃO COM O XGBOOST
     
-    resultado = predict({
+    inputs = {
         "AMT_INCOME_TOTAL": amt_income,
         "AMT_CREDIT": amt_credit,
         "AMT_ANNUITY": amt_annuity,
@@ -99,8 +101,10 @@ if st.button("Analisar Cliente"):
         "DAYS_BIRTH": -(idade * 365),
         "EXT_SOURCE_1": ext_source_1,
         "EXT_SOURCE_2": ext_source_2,
-        "EXT_SOURCE_3": ext_source_3
-        })
+        "EXT_SOURCE_3": ext_source_3,
+    }
+    resultado = predict(inputs)
+    log_prediction(inputs, resultado, model_version=os.environ.get("MODEL_VERSION", "v1"))
 
 
     probabilidade = resultado["probability"] * 100

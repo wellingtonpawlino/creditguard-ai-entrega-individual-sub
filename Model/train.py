@@ -104,6 +104,7 @@ def run_training(
     pipeline_config_path: str = "DataPipeline/config.yaml",
     model_config_path: str = "Model/config.yaml",
     use_minio: bool = False,
+    use_db: bool = False,
 ) -> dict:
     pipeline_cfg = _load_config(pipeline_config_path)
     model_cfg = _load_config(model_config_path)
@@ -134,6 +135,19 @@ def run_training(
     for k, v in metrics.items():
         print(f"  {k:12}: {v:.4f}")
 
+    if use_db:
+        from utils.db import register_model
+        mc = model_cfg.get("minio", {})
+        version = mc.get("version", "v1")
+        register_model(
+            version=version,
+            metrics=metrics,
+            description="XGBoost Balanced",
+            artifact_bucket=mc.get("bucket", "model-artifacts"),
+            artifact_path=f"{version}/{mc.get('objects', {}).get('model', 'xgb_balanced_model.joblib')}",
+        )
+        print(f"Modelo registrado no PostgreSQL: versão {version}")
+
     return metrics
 
 
@@ -141,5 +155,6 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--minio", action="store_true", help="Lê/escreve via MinIO em vez do sistema de arquivos local")
+    parser.add_argument("--db", action="store_true", help="Registra o modelo no PostgreSQL após o treino")
     args = parser.parse_args()
-    run_training(use_minio=args.minio)
+    run_training(use_minio=args.minio, use_db=args.db)
