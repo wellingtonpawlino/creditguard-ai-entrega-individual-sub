@@ -185,14 +185,70 @@ O Recall é a métrica prioritária: o custo de aprovar um inadimplente supera o
 
 ---
 
-## Próximos Passos
+## Roadmap de Desenvolvimento MLOps
 
-- Comparação adicional de modelos (Random Forest e LightGBM), caso os experimentos do grupo sejam concluídos.
+A evolução da infraestrutura MLOps segue quatro etapas progressivas. As etapas i) e ii) estão implementadas e entregues neste repositório. As etapas iii) e iv) constituem os próximos passos de desenvolvimento.
 
-- Cache do modelo em memória utilizando `@st.cache_resource` para reduzir tempo de resposta da aplicação.
+### i) Containerização e Serving com Docker Compose ✅
 
-- Upload automático dos artefatos para o MinIO ao término do treinamento via Airflow.
+Toda a stack de produção é definida em `docker-compose.yml` na raiz do projeto. Um único comando sobe cinco serviços integrados: aplicação Streamlit, MinIO, PostgreSQL, Airflow Webserver e Airflow Scheduler. O modelo é servido em `http://localhost:8501` com fallback local caso o MinIO não esteja disponível.
 
-- Monitoramento de data drift para acompanhamento do comportamento das predições em produção.
+### ii) Orquestração do Pipeline com Apache Airflow ✅
 
-- Agendamento periódico da DAG para automatizar futuras execuções do pipeline.
+O pipeline completo de dados e retreinamento é orquestrado pela DAG `creditguard_pipeline` (`dags/creditguard_pipeline.py`), composta por quatro tasks em sequência: `extract_data → data_sanitization → abt_transform → train_model`. A execução manual alternativa é disponibilizada via `MLOps/pipeline_orchestration.py`, que reutiliza os mesmos módulos do Airflow sem depender do daemon.
+
+### iii) API REST para Inferência com FastAPI
+
+**Objetivo:** Expor o modelo como endpoint HTTP independente do Streamlit, habilitando integração com sistemas externos (ERPs, CRMs, aplicativos mobile) sem acoplamento à interface visual.
+
+**Especificação planejada:**
+
+```
+POST /predict
+Content-Type: application/json
+
+{
+  "AMT_INCOME_TOTAL": 150000.0,
+  "AMT_CREDIT": 300000.0,
+  "AMT_ANNUITY": 25000.0,
+  "CNT_CHILDREN": 0,
+  "DAYS_BIRTH": -12775,
+  "EXT_SOURCE_1": 0.50,
+  "EXT_SOURCE_2": 0.50,
+  "EXT_SOURCE_3": 0.50
+}
+
+→ 200 OK
+{
+  "prediction": 0,
+  "probability": 0.1342,
+  "classification": "BAIXO RISCO",
+  "model_version": "v1"
+}
+```
+
+**Stack:** FastAPI + Uvicorn, containerizado na porta `8000`. O endpoint reutiliza `Model/predict.py` sem alterações — o mesmo serviço de inferência já implementado. A API seria adicionada ao `docker-compose.yml` como serviço `creditguard-api` paralelo ao Streamlit.
+
+**Motivação técnica:** Separação de responsabilidades entre interface (Streamlit) e serviço de inferência (API REST), permitindo múltiplos consumidores simultâneos e integração via webhook ou batch.
+
+### iv) Monitoramento de Data Drift e Alertas em Produção
+
+**Objetivo:** Detectar automaticamente quando a distribuição dos dados de entrada em produção diverge da distribuição do dataset de treinamento, sinalizando necessidade de retreinamento antes que a acurácia do modelo degrade.
+
+**Abordagem planejada:**
+
+| Componente | Tecnologia | Função |
+|---|---|---|
+| Coleta de estatísticas | `utils/db.py` (já existe) | Tabela `predictions` acumula entradas reais em produção |
+| Detecção de drift | `scipy.stats.ks_2samp` (KS-test) | Compara distribuição das features de entrada (produção vs. treino) |
+| Relatório | Evidently AI | Dashboard HTML com PSI, KS-statistic e distribuições sobrepostas |
+| Alertas | DAG Airflow agendada (cron semanal) | Dispara alerta se KS-statistic > 0.1 em qualquer feature crítica |
+| Trigger de retreinamento | Airflow + MinIO | Se drift confirmado, executa pipeline completo e registra novo modelo em `model_registry` |
+
+**Features críticas a monitorar** (top 5 por importância de gain):
+
+```
+EXT_SOURCE_2, EXT_SOURCE_3, DAYS_BIRTH, AMT_CREDIT, EXT_SOURCE_1_MISSING
+```
+
+**Justificativa:** O modelo XGBoost Balanced foi treinado com dados do período do dataset Home Credit. Em produção real, variações macroeconômicas (taxa de juros, desemprego) alteram o perfil de risco dos clientes. O KS-test sobre as features de maior ganho detecta essa deriva antes que o Recall do modelo caia abaixo do limiar aceitável.
