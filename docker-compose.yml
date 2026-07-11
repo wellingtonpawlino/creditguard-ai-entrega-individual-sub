@@ -38,6 +38,7 @@ services:
       - POSTGRES_DB=creditguard
       - POSTGRES_USER=creditguard
       - POSTGRES_PASSWORD=creditguard
+      - OMP_NUM_THREADS=1
     depends_on:
       minio:
         condition: service_healthy
