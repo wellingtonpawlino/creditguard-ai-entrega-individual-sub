@@ -29,7 +29,7 @@ Preparação dos dados       Modelo e lista de features       Interface web
 Responsável por todo o pré-processamento dos dados brutos até a ABT (Analytical Base Table) pronta para modelagem.
 
 - Entrada: CSVs brutos em `Dados/raw/` (não versionados no git)
-- Saída: ABT limpa em `Dados/abt/`
+- Saída: ABT limpa em `Dados/abt.csv`
 - Execução: via Jupyter Notebooks (`data_preparation.ipynb`)
 
 ### Camada 2 — Model
@@ -74,8 +74,8 @@ proscore-creditguard-ai/
 │   └── data_sanitization.py    # Placeholder
 ├── Dados/
 │   ├── raw/                    # CSVs brutos do Home Credit (ignorados pelo git)
-│   ├── processed/              # Dados intermediários
-│   └── abt/                    # ABT final pronta para modelagem
+│   ├── clean_data.csv          # Dados após sanitização (ignorado pelo git)
+│   └── abt.csv                 # ABT final pronta para modelagem (ignorado pelo git)
 ├── docs/                       # Documentação técnica das decisões do projeto
 │   ├── data_preparation.md     # Investigações e decisões de tratamento de dados
 │   ├── modeling_summary.md     # Resultados e comparativo de modelos
@@ -96,7 +96,7 @@ Dados/raw/ (CSVs Home Credit)
     ↓  DataPipeline/data_preparation.ipynb
 Investigações de qualidade → Tratamentos → Encoding → ABT V1 Final
     ↓
-Dados/abt/ (307.511 registros × 30 variáveis, 0 nulos)
+Dados/abt.csv (307.511 registros × 119 features + TARGET, 0 nulos)
     ↓  Model/evaluation.ipynb (treino + comparação de modelos)
 Model/artifacts/xgb_balanced_model.joblib
 Model/artifacts/features.joblib
