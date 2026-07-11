@@ -8,13 +8,37 @@ Documentação da infraestrutura MLOps implementada no projeto ProScore Analytic
 
 A camada MLOps do projeto é composta por cinco componentes integrados, orquestrados via `docker-compose.yml` na raiz do projeto:
 
-```
-Airflow (orquestração)
-    ↓
-DataPipeline → Model/artifacts → Streamlit (app)
-                    ↓
-               MinIO (armazenamento)
-               PostgreSQL (persistência)
+```mermaid
+flowchart TD
+    User([Usuário])
+
+    subgraph Stack ["docker-compose.yml"]
+        ST["Streamlit\napp/app.py · porta 8501"]
+        PR["Model/predict.py\nXGBoostClassifier"]
+
+        MN[("MinIO · porta 9100\nmodel-artifacts · raw-data · processed-data")]
+        LOCAL[("Model/artifacts/\nfallback local")]
+
+        PGP[("PostgreSQL · porta 5433\ntabela: predictions")]
+        PGM[("PostgreSQL · porta 5433\ntabela: model_registry")]
+
+        AF["Airflow · porta 8082\nDAG: creditguard_pipeline"]
+        SAN["DataPipeline/data_sanitization.py"]
+        ABT["DataPipeline/abt_transform.py"]
+        TRN["Model/train.py"]
+    end
+
+    User -- "preenche 8 atributos" --> ST
+    ST -- "predict(inputs)" --> PR
+    PR -. "tenta MinIO primeiro" .-> MN
+    PR -. "fallback" .-> LOCAL
+    PR -- "prediction + probability" --> ST
+    ST -- "log_prediction()" --> PGP
+    ST -- "ALTO RISCO / BAIXO RISCO" --> User
+
+    AF --> SAN --> ABT --> TRN
+    TRN -- "salva artefatos (.joblib)" --> MN
+    TRN -- "register_model()" --> PGM
 ```
 
 ---
@@ -158,3 +182,17 @@ docker-compose up --build
 | Versão ativa | v1 |
 
 O Recall é a métrica prioritária: o custo de aprovar um inadimplente supera o custo de negar um bom pagador.
+
+---
+
+## Próximos Passos
+
+- Comparação adicional de modelos (Random Forest e LightGBM), caso os experimentos do grupo sejam concluídos.
+
+- Cache do modelo em memória utilizando `@st.cache_resource` para reduzir tempo de resposta da aplicação.
+
+- Upload automático dos artefatos para o MinIO ao término do treinamento via Airflow.
+
+- Monitoramento de data drift para acompanhamento do comportamento das predições em produção.
+
+- Agendamento periódico da DAG para automatizar futuras execuções do pipeline.
