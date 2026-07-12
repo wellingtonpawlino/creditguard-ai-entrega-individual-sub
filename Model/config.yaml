@@ -12,10 +12,9 @@ model:
   random_state:  42
 
 artifacts:
-  model:     Model/artifacts/lgbm_balanced_model.joblib
-  features:  Model/artifacts/features.joblib
-  medianas:  Model/artifacts/medianas.joblib
-  xgb_model: Model/artifacts/xgb_balanced_model.joblib
+  model:    Model/artifacts/lgbm_balanced_model.joblib
+  features: Model/artifacts/features.joblib
+  medianas: Model/artifacts/medianas.joblib
 
 minio:
   bucket:  model-artifacts

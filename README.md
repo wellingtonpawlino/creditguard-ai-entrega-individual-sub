@@ -65,12 +65,12 @@ proscore-creditguard-ai/
 │   ├── exp_analysis.ipynb          ← análise exploratória
 │   └── config.yaml                 ← paths e parâmetros do pipeline
 ├── Model/
-│   ├── train.py                    ← treinamento do modelo XGBoost
+│   ├── train.py                    ← treinamento do modelo LightGBM
 │   ├── predict.py                  ← serviço de inferência
 │   ├── evaluation.ipynb            ← avaliação de métricas e curvas
 │   ├── config.yaml                 ← hiperparâmetros e paths de artefatos
 │   └── artifacts/
-│       ├── xgb_balanced_model.joblib
+│       ├── lgbm_balanced_model.joblib
 │       ├── features.joblib
 │       └── medianas.joblib
 ├── app/

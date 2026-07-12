@@ -14,7 +14,7 @@ flowchart TD
 
     subgraph Stack ["docker-compose.yml"]
         ST["Streamlit\napp/app.py · porta 8501"]
-        PR["Model/predict.py\nXGBoostClassifier"]
+        PR["Model/predict.py\nLGBMClassifier"]
 
         MN[("MinIO · porta 9100\nmodel-artifacts · raw-data · processed-data")]
         LOCAL[("Model/artifacts/\nfallback local")]
@@ -73,12 +73,12 @@ Armazenamento de objetos compatível com S3, usado para versionar artefatos do m
 | `processed-data` | ABT gerada pelo DataPipeline |
 | `model-artifacts` | Modelo serializado e lista de features |
 
-**Artefatos versionados por `MODEL_VERSION` (padrão: `v1`):**
+**Artefatos versionados por `MODEL_VERSION` (padrão: `v2`):**
 
 ```
 model-artifacts/
-└── v1/
-    ├── xgb_balanced_model.joblib
+└── v2/
+    ├── lgbm_balanced_model.joblib
     └── features.joblib
 ```
 
@@ -150,7 +150,7 @@ extract_data → data_sanitization → abt_transform → train_model
 | `extract_data` | `check_raw_data()` | Valida presença do CSV bruto em `Dados/raw/` |
 | `data_sanitization` | `run_sanitization()` | Limpeza e tratamento dos dados brutos |
 | `abt_transform` | `run_transform()` | Construção da ABT com encoding e feature engineering |
-| `train_model` | `run_training()` | Treina o XGBoost Balanced e salva os artefatos |
+| `train_model` | `run_training()` | Treina o LightGBM Balanced e salva os artefatos |
 
 ---
 
@@ -173,13 +173,13 @@ docker-compose up --build
 
 | Métrica | Valor |
 |---|---|
-| Algoritmo | XGBoost com `scale_pos_weight` |
-| ROC-AUC | 0.7509 |
-| Recall | 0.6568 |
-| Gini | 0.5019 |
-| KS | 0.3694 |
+| Algoritmo | LightGBM com `scale_pos_weight` |
+| ROC-AUC | 0,7524 |
+| Recall | 0,6606 |
+| Gini | 0,5049 |
+| KS | 0,3736 |
 | Features | 119 (pós-encoding) |
-| Versão ativa | v1 |
+| Versão ativa | v2 |
 
 O Recall é a métrica prioritária: o custo de aprovar um inadimplente supera o custo de negar um bom pagador.
 
@@ -251,4 +251,4 @@ Content-Type: application/json
 EXT_SOURCE_2, EXT_SOURCE_3, DAYS_BIRTH, AMT_CREDIT, EXT_SOURCE_1_MISSING
 ```
 
-**Justificativa:** O modelo XGBoost Balanced foi treinado com dados do período do dataset Home Credit. Em produção real, variações macroeconômicas (taxa de juros, desemprego) alteram o perfil de risco dos clientes. O KS-test sobre as features de maior ganho detecta essa deriva antes que o Recall do modelo caia abaixo do limiar aceitável.
+**Justificativa:** O modelo LightGBM Balanced foi treinado com dados do período do dataset Home Credit. Em produção real, variações macroeconômicas (taxa de juros, desemprego) alteram o perfil de risco dos clientes. O KS-test sobre as features de maior ganho detecta essa deriva antes que o Recall do modelo caia abaixo do limiar aceitável.
