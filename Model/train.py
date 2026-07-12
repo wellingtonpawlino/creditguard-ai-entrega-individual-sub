@@ -10,7 +10,7 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score,
 )
-from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
 
 
 def _load_config(config_path: str) -> dict:
@@ -42,7 +42,7 @@ def split_train_test(
 
 
 def compute_scale_pos_weight(y_train: pd.Series) -> float:
-    # Replica exatamente o cálculo do notebook: negativos / positivos = ~11.387
+    # negativos / positivos — mesma lógica do XGBoost (~11.387)
     negatives = int((y_train == 0).sum())
     positives = int((y_train == 1).sum())
     return negatives / positives
@@ -50,23 +50,25 @@ def compute_scale_pos_weight(y_train: pd.Series) -> float:
 
 def train_model(
     X_train: pd.DataFrame, y_train: pd.Series, cfg: dict
-) -> XGBClassifier:
+) -> LGBMClassifier:
     scale_pos_weight = compute_scale_pos_weight(y_train)
     m = cfg["model"]
-    model = XGBClassifier(
+    model = LGBMClassifier(
         n_estimators=m["n_estimators"],
         max_depth=m["max_depth"],
+        num_leaves=m["num_leaves"],
         learning_rate=m["learning_rate"],
         scale_pos_weight=scale_pos_weight,
         random_state=m["random_state"],
-        eval_metric=m["eval_metric"],
+        metric=m["metric"],
+        verbose=-1,
     )
     model.fit(X_train, y_train)
     return model
 
 
 def evaluate_model(
-    model: XGBClassifier, X_test: pd.DataFrame, y_test: pd.Series
+    model: LGBMClassifier, X_test: pd.DataFrame, y_test: pd.Series
 ) -> dict:
     y_pred = model.predict(X_test)
     y_proba = model.predict_proba(X_test)[:, 1]
@@ -80,7 +82,7 @@ def evaluate_model(
 
 
 def save_artifacts(
-    model: XGBClassifier, feature_names: list, cfg: dict, use_minio: bool = False
+    model: LGBMClassifier, feature_names: list, cfg: dict, use_minio: bool = False
 ) -> None:
     if use_minio:
         from utils.storage import save_joblib
@@ -131,20 +133,20 @@ def run_training(
     metrics = evaluate_model(model, X_test, y_test)
     save_artifacts(model, X_train.columns.tolist(), model_cfg, use_minio=use_minio)
 
-    print("\nMétricas — XGBoost Balanced:")
+    print("\nMétricas — LightGBM Balanced:")
     for k, v in metrics.items():
         print(f"  {k:12}: {v:.4f}")
 
     if use_db:
         from utils.db import register_model
         mc = model_cfg.get("minio", {})
-        version = mc.get("version", "v1")
+        version = mc.get("version", "v2")
         register_model(
             version=version,
             metrics=metrics,
-            description="XGBoost Balanced",
+            description="LightGBM Balanced",
             artifact_bucket=mc.get("bucket", "model-artifacts"),
-            artifact_path=f"{version}/{mc.get('objects', {}).get('model', 'xgb_balanced_model.joblib')}",
+            artifact_path=f"{version}/{mc.get('objects', {}).get('model', 'lgbm_balanced_model.joblib')}",
         )
         print(f"Modelo registrado no PostgreSQL: versão {version}")
 
