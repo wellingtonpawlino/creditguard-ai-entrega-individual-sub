@@ -10,7 +10,13 @@ O CreditGuard AI é um sistema de predição de inadimplência desenvolvido pela
 
 Instituições financeiras enfrentam o desafio permanente de equilibrar crescimento de carteira e controle de risco. A aprovação de clientes inadimplentes gera perdas financeiras diretas; critérios excessivamente restritivos bloqueiam boas oportunidades.
 
-O objetivo é classificar cada solicitante como **ALTO RISCO** ou **BAIXO RISCO** antes da concessão, reduzindo a taxa de inadimplência da carteira sem comprometer o volume de aprovações.
+O objetivo é classificar cada solicitante em três níveis de risco — **BAIXO RISCO**, **MÉDIO RISCO** ou **ALTO RISCO** — antes da concessão, reduzindo a taxa de inadimplência da carteira sem comprometer o volume de aprovações.
+
+| Classificação | Probabilidade | Ação recomendada |
+|---|---|---|
+| 🟢 BAIXO RISCO | < 30% | Aprovação automática recomendada |
+| 🟡 MÉDIO RISCO | 30% – 69% | Análise complementar recomendada |
+| 🔴 ALTO RISCO | ≥ 70% | Revisão manual obrigatória |
 
 A métrica prioritária é o **Recall**: o custo de aprovar um inadimplente (perda financeira) supera o custo de negar um bom pagador (perda de receita).
 

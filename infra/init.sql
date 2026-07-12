@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS predictions (
     amt_income_total FLOAT,
     amt_credit       FLOAT,
     amt_annuity      FLOAT,
+    amt_goods_price  FLOAT,
     cnt_children     INTEGER,
     days_birth       INTEGER,
+    days_employed    INTEGER,
     ext_source_1     FLOAT,
     ext_source_2     FLOAT,
     ext_source_3     FLOAT,
@@ -18,6 +20,11 @@ CREATE TABLE IF NOT EXISTS predictions (
 
     model_version    VARCHAR(20)
 );
+
+-- Migração não-destrutiva: adiciona colunas em bancos pré-existentes
+-- ADD COLUMN IF NOT EXISTS é idempotente no PostgreSQL 9.6+
+ALTER TABLE predictions ADD COLUMN IF NOT EXISTS amt_goods_price FLOAT;
+ALTER TABLE predictions ADD COLUMN IF NOT EXISTS days_employed   INTEGER;
 
 CREATE TABLE IF NOT EXISTS model_registry (
     id               SERIAL PRIMARY KEY,

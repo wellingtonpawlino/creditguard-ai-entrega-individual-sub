@@ -23,7 +23,7 @@ def _load_from_minio(object_name: str):
     try:
         _log(f"minio: tentando carregar {object_name}")
         from utils.storage import get_client
-        version = os.environ.get("MODEL_VERSION", "v1")
+        version = os.environ.get("MODEL_VERSION", "v2")
         bucket = "model-artifacts"
         _log(f"minio: get_object {bucket}/{version}/{object_name}")
         response = get_client().get_object(bucket, f"{version}/{object_name}")
@@ -84,11 +84,11 @@ def predict(data):
     feature_list = list(features)
     _log(f"predict: features ok — {len(feature_list)} colunas")
 
-    # Usar numpy array em vez de DataFrame para evitar uso concorrente do PyArrow:
-    # pandas 3.0+ converte column indexes e resultados de map() para ArrowStringArray
-    # automaticamente (infer_string=True). XGBoost chama df.columns.map(str) internamente
-    # em inplace_predict, o que conflita com o PyArrow do WebSocket do Streamlit
-    # rodando em outra thread → SIGSEGV. Numpy não envolve PyArrow.
+    # Usar numpy array em vez de DataFrame para evitar conflito com PyArrow:
+    # pandas 3.0+ ativa infer_string=True por padrão, convertendo índices de colunas
+    # para ArrowStringArray. Extensões C++ do LightGBM acessam esses índices em
+    # threads internas que conflitam com o WebSocket do Streamlit (também PyArrow)
+    # → potencial SIGSEGV. Numpy bypassa completamente o PyArrow.
     _log(f"predict: criando array numpy (1, {len(feature_list)})")
     arr = np.zeros((1, len(feature_list)), dtype=np.float64)
 
