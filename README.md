@@ -178,20 +178,29 @@ Serviços disponíveis após a inicialização:
 1. Acesse `http://localhost:8501` no navegador
 2. Preencha os atributos do cliente no formulário:
 
-| Campo | Descrição | Exemplo |
+| Campo | Feature | Exemplo |
 |---|---|---|
-| Renda Total do Cliente | `AMT_INCOME_TOTAL` em R$ | 150.000 |
-| Valor do Crédito | `AMT_CREDIT` solicitado | 300.000 |
-| Valor da Anuidade | `AMT_ANNUITY` (prestação anual) | 25.000 |
+| Renda Anual do Cliente (R$) | `AMT_INCOME_TOTAL` | 150.000 |
+| Valor do Crédito Solicitado (R$) | `AMT_CREDIT` | 300.000 |
+| Valor da Parcela Anual (R$) | `AMT_ANNUITY` | 25.000 |
+| Valor de Entrada (R$) | Calcula `AMT_GOODS_PRICE = AMT_CREDIT + Entrada` | 50.000 |
+| Idade do Cliente | Convertida para `DAYS_BIRTH = -(idade × 365)` | 35 |
+| Tempo no Emprego Atual (anos) | Convertido para `DAYS_EMPLOYED = -(anos × 365)` | 5 |
 | Número de Filhos | `CNT_CHILDREN` | 0 |
-| Idade | Convertida internamente para `DAYS_BIRTH` | 35 |
-| EXT_SOURCE_1/2/3 | Scores externos de bureau (0 a 1) | 0.50 |
+| Score Bureau 1 (0,00 – 1,00) | `EXT_SOURCE_1` — 3º maior preditor | 0,50 |
+| Score Bureau 2 (0,00 – 1,00) | `EXT_SOURCE_2` — 2º maior preditor | 0,50 |
+| Score Bureau 3 (0,00 – 1,00) | `EXT_SOURCE_3` — maior preditor do modelo | 0,50 |
 
 3. Clique em **Analisar Cliente**
 4. O modelo retorna:
    - **Probabilidade de inadimplência** (em %)
-   - **Classificação: ALTO RISCO** (prediction = 1) ou **BAIXO RISCO** (prediction = 0)
-   - **Ação recomendada** (revisão manual ou aprovação automática)
+   - **Classificação em 3 níveis de risco:**
+
+| Classificação | Faixa | Ação recomendada |
+|---|---|---|
+| 🟢 BAIXO RISCO | < 30% | Aprovação automática recomendada |
+| 🟡 MÉDIO RISCO | 30% – 69% | Análise complementar recomendada |
+| 🔴 ALTO RISCO | ≥ 70% | Revisão manual obrigatória |
 
 Cada predição é registrada automaticamente na tabela `predictions` do PostgreSQL com timestamp, inputs, resultado e versão do modelo.
 
@@ -230,7 +239,7 @@ docker exec -it creditguard-postgres psql -U creditguard -d creditguard \
 
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `MODEL_VERSION` | `v1` | Versão do modelo buscada no MinIO |
+| `MODEL_VERSION` | `v2` | Versão do modelo buscada no MinIO |
 | `MINIO_ENDPOINT` | `minio:9000` | Endereço do MinIO (interno ao Docker) |
 | `POSTGRES_HOST` | `postgres` | Host do banco de dados |
-| `OMP_NUM_THREADS` | `1` | Threads OpenMP do XGBoost (estabilidade em container) |
+| `OMP_NUM_THREADS` | `1` | Limita threads OpenMP — garante estabilidade do LightGBM em container |

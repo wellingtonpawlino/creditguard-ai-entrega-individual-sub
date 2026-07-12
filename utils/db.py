@@ -11,24 +11,27 @@ def get_connection():
     )
 
 
-def log_prediction(inputs: dict, result: dict, model_version: str = "v1") -> None:
+def log_prediction(inputs: dict, result: dict, model_version: str = "v2") -> None:
     try:
         conn = get_connection()
         cur = conn.cursor()
         cur.execute(
             """
             INSERT INTO predictions (
-                amt_income_total, amt_credit, amt_annuity, cnt_children,
-                days_birth, ext_source_1, ext_source_2, ext_source_3,
+                amt_income_total, amt_credit, amt_annuity, amt_goods_price,
+                cnt_children, days_birth, days_employed,
+                ext_source_1, ext_source_2, ext_source_3,
                 prediction, probability, model_version
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """,
             (
                 inputs.get("AMT_INCOME_TOTAL"),
                 inputs.get("AMT_CREDIT"),
                 inputs.get("AMT_ANNUITY"),
+                inputs.get("AMT_GOODS_PRICE"),
                 inputs.get("CNT_CHILDREN"),
                 inputs.get("DAYS_BIRTH"),
+                inputs.get("DAYS_EMPLOYED"),
                 inputs.get("EXT_SOURCE_1"),
                 inputs.get("EXT_SOURCE_2"),
                 inputs.get("EXT_SOURCE_3"),
