@@ -102,21 +102,21 @@ idade = st.number_input(
 )
 
 ext_source_1 = st.number_input(
-    "EXT_SOURCE_1",
+    "Score de Bureau 1 (0 a 1)",
     min_value=0.0,
     max_value=1.0,
     value=0.50
 )
 
 ext_source_2 = st.number_input(
-    "EXT_SOURCE_2",
+    "Score de Bureau 2 (0 a 1)",
     min_value=0.0,
     max_value=1.0,
     value=0.50
 )
 
 ext_source_3 = st.number_input(
-    "EXT_SOURCE_3",
+    "Score de Bureau 3 (0 a 1)",
     min_value=0.0,
     max_value=1.0,
     value=0.50
