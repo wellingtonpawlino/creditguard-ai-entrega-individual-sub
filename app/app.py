@@ -56,7 +56,7 @@ st.subheader("Predição de Inadimplência para Concessão de Crédito")
 st.success("✅ Aplicação pronta para demonstração")
 
 st.write("Modelo candidato para produção:")
-st.write("LightGBM Balanced v2")
+st.write("LightGBM Balanced")
 
 st.divider()
 
@@ -64,7 +64,7 @@ st.subheader("Status do Sistema")
 
 st.success("✅ Streamlit Online")
 st.success("✅ Aplicação Operacional")
-st.success("✅ LightGBM Balanced v2 (Modelo Candidato)")
+st.success("✅ LightGBM Balanced")
 
 st.divider()
 
