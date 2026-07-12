@@ -42,7 +42,7 @@ def load_model():
     global _model
     if _model is None:
         _log("load_model: _model is None, carregando...")
-        obj = _load_from_minio("xgb_balanced_model.joblib")
+        obj = _load_from_minio("lgbm_balanced_model.joblib")
         if obj is not None:
             _model = obj
             _log("load_model: carregado do MinIO")
