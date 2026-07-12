@@ -572,7 +572,7 @@ if analisar:
         prob_color  = "#DCFCE7"   # verde claro sobre fundo verde escuro
         bar_color   = "#4ADE80"   # verde médio — visível sobre track translúcido
         risk_color  = "#16A34A"   # borda superior dos KPI cards laterais
-    elif probabilidade < 60:
+    elif probabilidade < 70:
         nivel       = "MÉDIO RISCO"
         card_cls    = "result-card-mid"
         emoji       = "⚠️"
