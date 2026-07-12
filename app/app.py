@@ -377,29 +377,12 @@ with col_form:
             min_value=0.0, value=150000.0, step=1000.0, format="%.2f",
             help="Renda anual bruta declarada (AMT_INCOME_TOTAL).",
         )
+    with ff2:
         amt_credit = st.number_input(
             "Valor do Crédito Solicitado (R$)",
             min_value=0.0, value=300000.0, step=1000.0, format="%.2f",
             help="Valor total do crédito solicitado (AMT_CREDIT).",
         )
-    with ff2:
-        amt_annuity = st.number_input(
-            "Valor da Parcela Anual (R$)",
-            min_value=0.0, value=25000.0, step=500.0, format="%.2f",
-            help="Compromisso anual de pagamento do empréstimo (AMT_ANNUITY).",
-        )
-        down_payment = st.number_input(
-            "Valor de Entrada (R$)",
-            min_value=0.0, value=0.0, step=1000.0, format="%.2f",
-            help="Valor pago pelo cliente com recursos próprios.",
-        )
-
-    valor_total_bem = amt_credit + down_payment
-    st.markdown(
-        f'<div class="info-box">💡 <strong>Valor Total do Bem:</strong> {_fmt(valor_total_bem)}'
-        f'&nbsp;·&nbsp;Calculado como Crédito + Entrada</div>',
-        unsafe_allow_html=True,
-    )
 
     # — Perfil do Cliente ──────────────────────────────────────────────────────
     st.markdown('<p class="section-title">👤 Perfil do Cliente</p>', unsafe_allow_html=True)
@@ -446,10 +429,8 @@ with col_form:
 with col_panel:
 
     # Métricas derivadas
-    renda_mensal  = amt_income / 12 if amt_income > 0 else 1.0
-    ltv           = (amt_credit / valor_total_bem * 100) if valor_total_bem > 0 else 0.0
-    debt_burden   = (amt_annuity / 12 / renda_mensal * 100) if renda_mensal > 0 else 0.0
-    entrada_pct   = (down_payment / valor_total_bem * 100) if valor_total_bem > 0 else 0.0
+    renda_mensal   = amt_income / 12 if amt_income > 0 else 1.0
+    credito_renda  = (amt_credit / amt_income * 100) if amt_income > 0 else 0.0
 
     # — Resumo da Operação ─────────────────────────────────────────────────────
     st.markdown('<p class="section-title">📋 Resumo da Operação</p>', unsafe_allow_html=True)
@@ -460,24 +441,16 @@ with col_panel:
     <div class="op-value">{_fmt(amt_credit)}</div>
   </div>
   <div class="op-item">
-    <div class="op-label">Entrada</div>
-    <div class="op-value">{_fmt(down_payment)}</div>
-  </div>
-  <div class="op-item">
-    <div class="op-label">Valor Total do Bem</div>
-    <div class="op-value">{_fmt(valor_total_bem)}</div>
-  </div>
-  <div class="op-item">
-    <div class="op-label">Parcela Mensal (est.)</div>
-    <div class="op-value">{_fmt(amt_annuity / 12)}</div>
-  </div>
-  <div class="op-item">
-    <div class="op-label">Parcela Anual</div>
-    <div class="op-value">{_fmt(amt_annuity)}</div>
-  </div>
-  <div class="op-item">
     <div class="op-label">Renda Anual</div>
     <div class="op-value">{_fmt(amt_income)}</div>
+  </div>
+  <div class="op-item">
+    <div class="op-label">Renda Mensal (est.)</div>
+    <div class="op-value">{_fmt(renda_mensal)}</div>
+  </div>
+  <div class="op-item">
+    <div class="op-label">Crédito / Renda</div>
+    <div class="op-value">{credito_renda:.0f}%</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
@@ -485,16 +458,12 @@ with col_panel:
     # — Indicadores ────────────────────────────────────────────────────────────
     st.markdown('<p class="section-title">📈 Indicadores</p>', unsafe_allow_html=True)
 
-    ltv_st    = "ok" if ltv <= 80 else ("warn" if ltv <= 90 else "critico")
-    debt_st   = "ok" if debt_burden <= 30 else ("warn" if debt_burden <= 40 else "critico")
-    entr_st   = "ok" if entrada_pct >= 20 else ("warn" if entrada_pct >= 10 else "critico")
-    emp_st    = "ok" if tempo_emprego >= 2 else ("warn" if tempo_emprego >= 1 else "critico")
+    cr_st  = "ok" if credito_renda <= 300 else ("warn" if credito_renda <= 500 else "critico")
+    emp_st = "ok" if tempo_emprego >= 2 else ("warn" if tempo_emprego >= 1 else "critico")
 
     st.markdown(f"""
 <div class="kpi-grid">
-  {_kpi("LTV", f"{ltv:.0f}%", "Ideal: &lt; 80%", ltv_st)}
-  {_kpi("Comprometimento", f"{debt_burden:.0f}%", "Ideal: &lt; 30%", debt_st)}
-  {_kpi("Entrada (%)", f"{entrada_pct:.0f}%", "Ideal: &gt; 20%", entr_st)}
+  {_kpi("Crédito / Renda", f"{credito_renda:.0f}%", "Ideal: &lt; 300%", cr_st)}
   {_kpi("Tempo de Emprego", f"{tempo_emprego} ano{'s' if tempo_emprego != 1 else ''}", "Ideal: &gt; 2 anos", emp_st)}
 </div>
 """, unsafe_allow_html=True)
@@ -508,14 +477,10 @@ with col_panel:
         alertas.append(_alerta("atencao", "Crédito superior à renda anual informada."))
     if tempo_emprego < 1:
         alertas.append(_alerta("info", "Cliente com menos de 1 ano de emprego atual."))
-    if amt_annuity > renda_mensal * 0.4:
-        alertas.append(_alerta("critico", "Parcela representa mais de 40% da renda mensal."))
-    if ltv > 90:
-        alertas.append(_alerta("critico", f"LTV elevado ({ltv:.0f}%) — crédito cobre mais de 90% do bem."))
-    elif ltv > 80:
-        alertas.append(_alerta("atencao", f"LTV moderado ({ltv:.0f}%) — acima do ideal de 80%."))
-    if down_payment >= amt_credit and down_payment > 0:
-        alertas.append(_alerta("ok", "Entrada elevada em relação ao valor financiado."))
+    if credito_renda > 500:
+        alertas.append(_alerta("critico", f"Crédito representa {credito_renda:.0f}% da renda anual — comprometimento muito elevado."))
+    elif credito_renda > 300:
+        alertas.append(_alerta("atencao", f"Crédito representa {credito_renda:.0f}% da renda anual — acima do ideal."))
     if not alertas:
         alertas.append(_alerta("ok", "Nenhum alerta de negócio identificado."))
 
@@ -531,13 +496,10 @@ if analisar:
     sys.stderr.write("[APP] botao clicado — iniciando analise\n")
     sys.stderr.flush()
 
-    amt_goods_price = amt_credit + down_payment
-
     inputs = {
         "AMT_INCOME_TOTAL": amt_income,
         "AMT_CREDIT":       amt_credit,
-        "AMT_ANNUITY":      amt_annuity,
-        "AMT_GOODS_PRICE":  amt_goods_price,
+        "AMT_GOODS_PRICE":  amt_credit,
         "CNT_CHILDREN":     cnt_children,
         "DAYS_BIRTH":       -(idade * 365),
         "DAYS_EMPLOYED":    -(tempo_emprego * 365),
@@ -625,8 +587,7 @@ if analisar:
         with st.expander("🔧 Detalhes Técnicos"):
             st.json(resultado)
             st.json({
-                "AMT_GOODS_PRICE_calculado": amt_goods_price,
-                "AMT_GOODS_PRICE_formula":   f"{amt_credit} + {down_payment}",
+                "AMT_GOODS_PRICE_calculado": amt_credit,
                 "DAYS_BIRTH":                -(idade * 365),
                 "DAYS_EMPLOYED":             -(tempo_emprego * 365),
             })
