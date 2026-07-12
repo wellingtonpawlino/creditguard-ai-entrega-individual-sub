@@ -245,9 +245,9 @@ div[data-testid="column"] {
     margin-bottom: 1rem;
     box-shadow:    0 6px 24px rgba(0,0,0,0.18);
 }
-.result-card-low  { background: linear-gradient(135deg, #1F2937 0%, #374151 100%); }
+.result-card-low  { background: linear-gradient(135deg, #14532D 0%, #22C55E 100%); }
 .result-card-mid  { background: linear-gradient(135deg, #EA580C 0%, #F97316 100%); }
-.result-card-high { background: linear-gradient(135deg, #7F1D1D 0%, #DC2626 100%); }
+.result-card-high { background: linear-gradient(135deg, #991B1B 0%, #DC2626 100%); }
 
 .result-nivel      { font-size: 0.76rem; font-weight: 800; text-transform: uppercase;
                      letter-spacing: 0.14em; color: rgba(255,255,255,0.7); margin: 0; }
@@ -570,19 +570,19 @@ if analisar:
         card_cls    = "result-card-low"
         emoji       = "✅"
         acao        = "Aprovação automática recomendada."
-        prob_color  = "#4ADE80"   # verde esmeralda — positivo, legível sobre cinza escuro
+        prob_color  = "#DCFCE7"
     elif probabilidade < 60:
         nivel       = "MÉDIO RISCO"
         card_cls    = "result-card-mid"
         emoji       = "⚠️"
-        acao        = "Análise complementar recomendada antes da aprovação."
-        prob_color  = "#FFFFFF"
+        acao        = "Análise complementar recomendada."
+        prob_color  = "#FFF7ED"
     else:
         nivel       = "ALTO RISCO"
         card_cls    = "result-card-high"
-        emoji       = "🚨"
-        acao        = "Revisão manual da proposta obrigatória."
-        prob_color  = "#FCA5A5"   # vermelho rosado suave — legível sobre vermelho escuro
+        emoji       = "⛔"
+        acao        = "Revisão manual obrigatória."
+        prob_color  = "#FECACA"
 
     bar_pct = min(int(probabilidade), 100)
 
