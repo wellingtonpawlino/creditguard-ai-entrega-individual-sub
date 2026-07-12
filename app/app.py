@@ -464,9 +464,9 @@ with col_panel:
 
     st.markdown(f"""
 <div class="kpi-grid">
-  {_kpi("LTV", f"{ltv:.1f}%", "Ideal: &lt; 80%", ltv_st)}
-  {_kpi("Comprometimento", f"{debt_burden:.1f}%", "Ideal: &lt; 30%", debt_st)}
-  {_kpi("Entrada (%)", f"{entrada_pct:.1f}%", "Ideal: &gt; 20%", entr_st)}
+  {_kpi("LTV", f"{ltv:.0f}%", "Ideal: &lt; 80%", ltv_st)}
+  {_kpi("Comprometimento", f"{debt_burden:.0f}%", "Ideal: &lt; 30%", debt_st)}
+  {_kpi("Entrada (%)", f"{entrada_pct:.0f}%", "Ideal: &gt; 20%", entr_st)}
   {_kpi("Tempo de Emprego", f"{tempo_emprego} ano{'s' if tempo_emprego != 1 else ''}", "Ideal: &gt; 2 anos", emp_st)}
 </div>
 """, unsafe_allow_html=True)
@@ -483,9 +483,9 @@ with col_panel:
     if amt_annuity > renda_mensal * 0.4:
         alertas.append(_alerta("critico", "Parcela representa mais de 40% da renda mensal."))
     if ltv > 90:
-        alertas.append(_alerta("critico", f"LTV elevado ({ltv:.1f}%) — crédito cobre mais de 90% do bem."))
+        alertas.append(_alerta("critico", f"LTV elevado ({ltv:.0f}%) — crédito cobre mais de 90% do bem."))
     elif ltv > 80:
-        alertas.append(_alerta("atencao", f"LTV moderado ({ltv:.1f}%) — acima do ideal de 80%."))
+        alertas.append(_alerta("atencao", f"LTV moderado ({ltv:.0f}%) — acima do ideal de 80%."))
     if down_payment >= amt_credit and down_payment > 0:
         alertas.append(_alerta("ok", "Entrada elevada em relação ao valor financiado."))
     if not alertas:
@@ -563,7 +563,7 @@ if analisar:
 <div class="result-card {card_cls}">
   <p class="result-nivel">{nivel}</p>
   <p class="result-emoji">{emoji}</p>
-  <p class="result-prob">{probabilidade:.1f}%</p>
+  <p class="result-prob">{probabilidade:.0f}%</p>
   <p class="result-prob-label">Probabilidade de Inadimplência</p>
   <div class="prob-bar-track">
     <div class="prob-bar-fill" style="width:{bar_pct}%;"></div>
@@ -577,7 +577,7 @@ if analisar:
         st.markdown(f"""
 <div class="kpi-card kpi-ok" style="text-align:center; margin-bottom:0.5rem;">
   <div class="kpi-label">Probabilidade</div>
-  <div class="kpi-value" style="font-size:1.6rem;">{probabilidade:.1f}%</div>
+  <div class="kpi-value" style="font-size:1.6rem;">{probabilidade:.0f}%</div>
 </div>
 <div class="kpi-card kpi-ok" style="text-align:center;">
   <div class="kpi-label">Classificação Binária</div>
