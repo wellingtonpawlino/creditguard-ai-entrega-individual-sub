@@ -11,9 +11,10 @@ __pycache__/
 # Jupyter
 .ipynb_checkpoints/
 
-# Model Artifacts
+# Model Artifacts (exceto os versionados em Model/artifacts/)
 *.pkl
 *.joblib
+!Model/artifacts/*.joblib
 
 # VS Code
 .vscode/
