@@ -93,6 +93,34 @@ st.markdown("""
 /* ── Base ── */
 .stApp { background-color: #F3F4F6; }
 
+/* ── Labels dos campos de input ── */
+[data-testid="stWidgetLabel"] p,
+[data-testid="stWidgetLabel"] label {
+    color:         #F97316 !important;
+    font-size:     14px !important;
+    font-weight:   700 !important;
+    opacity:       1 !important;
+    margin-bottom: 0.1rem !important;
+    line-height:   1.3 !important;
+}
+
+/* ── Espaçamento entre label, input e próxima seção ── */
+.stNumberInput {
+    margin-bottom: 0.85rem !important;
+}
+div[data-testid="column"] {
+    padding-top: 0.3rem !important;
+}
+
+/* ── Caption (Faixa válida bureau) ── */
+.stCaption p {
+    color:       #374151 !important;
+    font-size:   0.78rem !important;
+    font-weight: 500 !important;
+    opacity:     1 !important;
+    margin-top:  0.1rem !important;
+}
+
 /* ── Botão primário ── */
 .stButton > button[kind="primary"] {
     background-color: #F97316 !important;
@@ -351,7 +379,7 @@ with col_form:
             help="Renda anual bruta declarada (AMT_INCOME_TOTAL).",
         )
         amt_credit = st.number_input(
-            "Valor do Crédito (R$)",
+            "Valor do Crédito Solicitado (R$)",
             min_value=0.0, value=300000.0, step=1000.0, format="%.2f",
             help="Valor total do crédito solicitado (AMT_CREDIT).",
         )
@@ -380,17 +408,17 @@ with col_form:
     pf1, pf2, pf3 = st.columns(3)
     with pf1:
         idade = st.number_input(
-            "Idade (anos)", min_value=18, max_value=100, value=35,
-            help="Convertida para DAYS_BIRTH = -(idade × 365).",
+            "Idade do Cliente", min_value=18, max_value=100, value=35,
+            help="Idade em anos inteiros. Convertida internamente para DAYS_BIRTH = -(idade × 365).",
         )
     with pf2:
         tempo_emprego = st.number_input(
-            "Tempo de Emprego (anos)", min_value=0, max_value=60, value=5,
-            help="Anos no emprego atual → DAYS_EMPLOYED = -(anos × 365).",
+            "Tempo no Emprego Atual", min_value=0, max_value=60, value=5,
+            help="Anos no emprego atual. Convertido internamente para DAYS_EMPLOYED = -(anos × 365).",
         )
     with pf3:
         cnt_children = st.number_input(
-            "Nº de Filhos", min_value=0, value=0,
+            "Número de Filhos", min_value=0, value=0,
             help="Filhos dependentes (CNT_CHILDREN).",
         )
 
@@ -400,19 +428,20 @@ with col_form:
     sc1, sc2, sc3 = st.columns(3)
     with sc1:
         ext_source_1 = st.number_input(
-            "Bureau 1", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
-            help="EXT_SOURCE_1 — 3º maior preditor do modelo.",
+            "Score Bureau 1", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
+            help="EXT_SOURCE_1 — 3º maior preditor do modelo. 0,00 = risco máximo · 1,00 = risco mínimo.",
         )
     with sc2:
         ext_source_2 = st.number_input(
-            "Bureau 2", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
-            help="EXT_SOURCE_2 — 2º maior preditor (gain 157.687).",
+            "Score Bureau 2", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
+            help="EXT_SOURCE_2 — 2º maior preditor (gain 157.687). 0,00 = risco máximo · 1,00 = risco mínimo.",
         )
     with sc3:
         ext_source_3 = st.number_input(
-            "Bureau 3", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
-            help="EXT_SOURCE_3 — Maior preditor do modelo (gain 191.174).",
+            "Score Bureau 3", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
+            help="EXT_SOURCE_3 — Maior preditor do modelo (gain 191.174). 0,00 = risco máximo · 1,00 = risco mínimo.",
         )
+    st.caption("Faixa válida: 0,00 a 1,00  ·  0,00 = risco máximo  ·  0,50 = neutro  ·  1,00 = risco mínimo")
 
 
 with col_panel:
