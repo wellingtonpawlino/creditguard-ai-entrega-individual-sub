@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-MODEL_PATH = "Model/artifacts/xgb_balanced_model.joblib"
+MODEL_PATH = "Model/artifacts/lgbm_balanced_model.joblib"
 FEATURES_PATH = "Model/artifacts/features.joblib"
 
 _model = None

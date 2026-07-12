@@ -116,16 +116,19 @@ python DataPipeline/abt_transform.py
 ### 3. Treinar o modelo
 
 ```bash
-# Treina o XGBoost Balanced e salva os artefatos em Model/artifacts/
+# Treina o LightGBM Balanced e salva os artefatos em Model/artifacts/
 python Model/train.py
 ```
 
-Métricas esperadas ao final do treinamento:
+Saída gerada: `Model/artifacts/lgbm_balanced_model.joblib` e `Model/artifacts/features.joblib`.
 
-| Métrica | Valor esperado |
-|---|---|
-| ROC-AUC | ~0.751 |
-| Recall  | ~0.657 |
+Métricas esperadas ao final do treinamento (comparativo com XGBoost histórico):
+
+| Métrica | XGBoost Balanced (v1) | LightGBM Balanced (v2) |
+|---|---|---|
+| ROC-AUC | 0,7509 | a avaliar após retreinamento |
+| Recall  | 0,6568 | a avaliar após retreinamento |
+| Gini    | 0,5019 | a avaliar após retreinamento |
 
 ### 4. Avaliar o modelo
 
