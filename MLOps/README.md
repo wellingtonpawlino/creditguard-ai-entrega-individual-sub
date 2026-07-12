@@ -34,7 +34,7 @@ flowchart TD
     PR -. "fallback" .-> LOCAL
     PR -- "prediction + probability" --> ST
     ST -- "log_prediction()" --> PGP
-    ST -- "ALTO RISCO / BAIXO RISCO" --> User
+    ST -- "BAIXO / MÉDIO / ALTO RISCO" --> User
 
     AF --> SAN --> ABT --> TRN
     TRN -- "salva artefatos (.joblib)" --> MN
@@ -51,7 +51,7 @@ Interface web que expõe o modelo ao usuário final.
 
 - Porta: `8501`
 - Coleta 8 atributos do cliente (renda, crédito, idade, scores externos etc.)
-- Chama `Model/predict.py` e exibe o resultado: **ALTO RISCO** ou **BAIXO RISCO** com probabilidade de inadimplência
+- Chama `Model/predict.py` e exibe o resultado: **BAIXO RISCO**, **MÉDIO RISCO** ou **ALTO RISCO** com probabilidade de inadimplência
 - Após cada predição, registra o resultado no PostgreSQL via `utils/db.py`
 - Lê a versão do modelo da variável de ambiente `MODEL_VERSION`
 
