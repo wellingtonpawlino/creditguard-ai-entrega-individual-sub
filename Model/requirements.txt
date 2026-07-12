@@ -1,7 +1,6 @@
 pandas
+numpy
 scikit-learn
 lightgbm
 joblib
 pyyaml
-minio
-psycopg2-binary

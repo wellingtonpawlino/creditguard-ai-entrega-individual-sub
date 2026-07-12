@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 O objetivo central é prever a probabilidade de um cliente não honrar um empréstimo, classificando-o como **ALTO RISCO** ou **BAIXO RISCO** antes da concessão do crédito.
 
-**Status atual:** ~55–60% concluído. Data Preparation e Modelagem estão finalizadas. Avaliação final e MLOps estão em andamento.
+**Status atual:** Projeto completo. Data Preparation, Modelagem, Avaliação e MLOps entregues.
 
 ---
 
@@ -36,10 +36,10 @@ Responsável por todo o pré-processamento dos dados brutos até a ABT (Analytic
 
 Responsável pelo treinamento e pela inferência.
 
-- `Model/predict.py`: serviço de inferência. Carrega o modelo e a lista de features via `joblib`, monta o DataFrame com todas as features zeradas e preenche apenas as colunas fornecidas pelo caller.
-- `Model/artifacts/xgb_balanced_model.joblib`: modelo XGBoost serializado (candidato a produção).
-- `Model/artifacts/features.joblib`: lista das 30 features na ordem exata esperada pelo modelo.
-- `Model/train.py`: placeholder para retreinamento (ainda não implementado).
+- `Model/predict.py`: serviço de inferência. Carrega o modelo e a lista de features via `joblib`, inicializa array numpy com todas as 119 features zeradas e preenche apenas as colunas fornecidas pelo caller.
+- `Model/artifacts/lgbm_balanced_model.joblib`: modelo LightGBM serializado (produção ativa, v2).
+- `Model/artifacts/features.joblib`: lista das 119 features na ordem exata esperada pelo modelo.
+- `Model/train.py`: treinamento do LightGBM Balanced com `scale_pos_weight` e sanitização de nomes de colunas.
 
 ### Camada 3 — App
 
@@ -58,20 +58,23 @@ proscore-creditguard-ai/
 ├── app/
 │   ├── app.py                  # Interface Streamlit (ponto de entrada da aplicação)
 │   ├── Dockerfile              # Imagem Python 3.12-slim, porta 8501
-│   └── requirements.txt        # Dependências mínimas da app (streamlit, pandas, joblib, xgboost, scikit-learn, numpy)
+│   └── requirements.txt        # Dependências mínimas da app (streamlit, pandas, joblib, lightgbm, scikit-learn, numpy)
 ├── Model/
 │   ├── artifacts/
-│   │   ├── xgb_balanced_model.joblib   # Modelo candidato a produção
-│   │   └── features.joblib             # Lista de features na ordem correta
+│   │   ├── lgbm_balanced_model.joblib  # Modelo LightGBM v2 em produção
+│   │   ├── features.joblib             # Lista de 119 features na ordem correta
+│   │   └── medianas.joblib             # Medianas para imputação em produção
 │   ├── predict.py              # Serviço de inferência (função predict())
-│   ├── train.py                # Placeholder para retreinamento
-│   ├── evaluation.ipynb        # Avaliação de modelos
-│   └── config.yaml             # Placeholder de configuração
+│   ├── train.py                # Treinamento do LightGBM Balanced
+│   ├── evaluation.ipynb        # Avaliação de modelos e interpretabilidade
+│   ├── requirements.txt        # Dependências do módulo Model
+│   ├── README.md               # Documentação do modelo
+│   └── config.yaml             # Hiperparâmetros e paths de artefatos
 ├── DataPipeline/
 │   ├── data_preparation.ipynb  # Pipeline completo de preparação dos dados e construção da ABT
 │   ├── exp_analysis.ipynb      # Análise exploratória
-│   ├── abt_transform.py        # Placeholder
-│   └── data_sanitization.py    # Placeholder
+│   ├── abt_transform.py        # Encoding e geração do ABT final
+│   └── data_sanitization.py    # Limpeza e construção da ABT limpa
 ├── Dados/
 │   ├── raw/                    # CSVs brutos do Home Credit (ignorados pelo git)
 │   ├── clean_data.csv          # Dados após sanitização (ignorado pelo git)
@@ -80,7 +83,7 @@ proscore-creditguard-ai/
 │   ├── data_preparation.md     # Investigações e decisões de tratamento de dados
 │   ├── modeling_summary.md     # Resultados e comparativo de modelos
 │   └── ...
-├── MLOps/                      # Placeholder para infraestrutura MLOps (não implementado)
+├── MLOps/                      # Infraestrutura MLOps (Airflow + pipeline_orchestration)
 ├── docker-compose.yml          # Sobe o serviço creditguard-app na porta 8501
 └── requirements.txt            # Dependências completas para desenvolvimento (notebooks + ML)
 ```
@@ -94,11 +97,11 @@ proscore-creditguard-ai/
 ```
 Dados/raw/ (CSVs Home Credit)
     ↓  DataPipeline/data_preparation.ipynb
-Investigações de qualidade → Tratamentos → Encoding → ABT V1 Final
+Investigações de qualidade → Tratamentos → Encoding → ABT Final
     ↓
 Dados/abt.csv (307.511 registros × 119 features + TARGET, 0 nulos)
-    ↓  Model/evaluation.ipynb (treino + comparação de modelos)
-Model/artifacts/xgb_balanced_model.joblib
+    ↓  Model/train.py (LightGBM Balanced, scale_pos_weight≈11.39)
+Model/artifacts/lgbm_balanced_model.joblib
 Model/artifacts/features.joblib
 ```
 
@@ -202,11 +205,10 @@ Estas decisões estão documentadas em `docs/data_preparation.md` e devem ser re
 | Modelo | ROC-AUC | Recall | Observação |
 |---|---|---|---|
 | Logistic Regression (baseline) | 0,693 | 0,04% | Recall praticamente nulo — inútil para o problema |
-| **XGBoost Balanced** | **0,751** | **65,68%** | **Candidato a produção** |
+| XGBoost Balanced (v1) | 0,7509 | 65,68% | Superado pelo LightGBM |
+| **LightGBM Balanced (v2)** | **0,7524** | **66,06%** | **Modelo em produção** |
 
-O Recall é a métrica prioritária porque o custo de aprovar um inadimplente supera o custo de negar um bom pagador. O parâmetro `scale_pos_weight` do XGBoost é usado para lidar com o desbalanceamento (91,93% adimplentes / 8,07% inadimplentes).
-
-Modelos ainda em avaliação: Random Forest e LightGBM.
+O Recall é a métrica prioritária porque o custo de aprovar um inadimplente supera o custo de negar um bom pagador. O parâmetro `scale_pos_weight` é usado para lidar com o desbalanceamento (91,93% adimplentes / 8,07% inadimplentes). O LightGBM usa crescimento folha-a-folha (`num_leaves=63`) com GOSS e EFB, sendo 28% mais rápido que o XGBoost nos mesmos dados.
 
 ---
 
@@ -221,10 +223,10 @@ Modelos ainda em avaliação: Random Forest e LightGBM.
 
 ## Padrões de Desenvolvimento
 
-- **Não remover os arquivos `.joblib` de `Model/artifacts/`** — são os artefatos do modelo candidato a produção.
-- **Não alterar a ordem das features** em `features.joblib` — o XGBoost depende da ordem das colunas.
+- **Não remover `lgbm_balanced_model.joblib` nem `features.joblib`** de `Model/artifacts/` — são os artefatos do modelo em produção.
+- **Não alterar a ordem das features** em `features.joblib` — o LightGBM depende da ordem das colunas.
 - Qualquer novo tratamento de dados deve ser documentado em `docs/data_preparation.md` seguindo o padrão: Problema → Evidências → Interpretação → Decisão → Status.
-- Novos modelos devem ser comparados contra o XGBoost Balanced usando as métricas ROC-AUC e Recall na mesma base de teste.
+- Novos modelos devem ser comparados contra o LightGBM Balanced v2 usando as métricas ROC-AUC e Recall na mesma base de teste.
 - Os dados brutos em `Dados/raw/` não são versionados (`.gitignore`). Para reproduzir o pipeline, baixar o dataset Home Credit Default Risk do Kaggle.
 
 ---
@@ -235,5 +237,5 @@ Modelos ainda em avaliação: Random Forest e LightGBM.
 - Ao editar o serviço de predição, garantir que o DataFrame seja inicializado com **todas as features** de `features.joblib` zeradas antes de preencher os valores fornecidos — isso evita erros de shape com o modelo.
 - O contexto do Docker começa na **raiz do projeto** (não dentro de `app/`). Por isso `app/Dockerfile` usa `COPY . .` e o CMD referencia `app/app.py`.
 - A documentação de decisões técnicas fica em `docs/`. Consulte `docs/data_preparation.md` antes de modificar o pipeline de dados e `docs/modeling_summary.md` antes de alterar a lógica de modelagem.
-- `MLOps/` é um placeholder vazio — não há nada implementado lá ainda.
-- Ao sugerir melhorias de MLOps, considerar: cache do modelo em memória no Streamlit (`@st.cache_resource`), logging de predições, monitoramento de drift de dados.
+- `MLOps/` contém `pipeline_orchestration.py` e `README.md` com roadmap das etapas i–iv.
+- O modelo em memória no Streamlit é cacheado via `@st.cache_resource` em `app/app.py`. Logging de predições está implementado em `utils/db.py`.
