@@ -245,8 +245,8 @@ div[data-testid="column"] {
     margin-bottom: 1rem;
     box-shadow:    0 6px 24px rgba(0,0,0,0.18);
 }
-.result-card-low  { background: linear-gradient(135deg, #14532D 0%, #22C55E 100%); }
-.result-card-mid  { background: linear-gradient(135deg, #EA580C 0%, #F97316 100%); }
+.result-card-low  { background: linear-gradient(135deg, #14532D 0%, #16A34A 100%); }
+.result-card-mid  { background: linear-gradient(135deg, #D97706 0%, #FBBF24 100%); }
 .result-card-high { background: linear-gradient(135deg, #991B1B 0%, #DC2626 100%); }
 
 .result-nivel      { font-size: 0.76rem; font-weight: 800; text-transform: uppercase;
@@ -266,7 +266,6 @@ div[data-testid="column"] {
     overflow:      hidden;
 }
 .prob-bar-fill {
-    background:    rgba(255,255,255,0.9);
     height:        7px;
     border-radius: 99px;
 }
@@ -570,19 +569,25 @@ if analisar:
         card_cls    = "result-card-low"
         emoji       = "✅"
         acao        = "Aprovação automática recomendada."
-        prob_color  = "#DCFCE7"
+        prob_color  = "#DCFCE7"   # verde claro sobre fundo verde escuro
+        bar_color   = "#4ADE80"   # verde médio — visível sobre track translúcido
+        risk_color  = "#16A34A"   # borda superior dos KPI cards laterais
     elif probabilidade < 60:
         nivel       = "MÉDIO RISCO"
         card_cls    = "result-card-mid"
         emoji       = "⚠️"
         acao        = "Análise complementar recomendada."
-        prob_color  = "#FFF7ED"
+        prob_color  = "#FEF9C3"   # amarelo muito claro — legível sobre amarelo escuro
+        bar_color   = "#FCD34D"   # amarelo médio
+        risk_color  = "#FBBF24"   # borda superior dos KPI cards laterais
     else:
         nivel       = "ALTO RISCO"
         card_cls    = "result-card-high"
         emoji       = "⛔"
         acao        = "Revisão manual obrigatória."
-        prob_color  = "#FECACA"
+        prob_color  = "#FECACA"   # vermelho claro sobre fundo vermelho escuro
+        bar_color   = "#F87171"   # vermelho médio
+        risk_color  = "#DC2626"   # borda superior dos KPI cards laterais
 
     bar_pct = min(int(probabilidade), 100)
 
@@ -598,7 +603,7 @@ if analisar:
   <p class="result-prob" style="color:{prob_color};">{probabilidade:.0f}%</p>
   <p class="result-prob-label">Probabilidade de Inadimplência</p>
   <div class="prob-bar-track">
-    <div class="prob-bar-fill" style="width:{bar_pct}%;"></div>
+    <div class="prob-bar-fill" style="width:{bar_pct}%; background:{bar_color};"></div>
   </div>
   <hr class="result-divider">
   <p class="result-acao">📋 <strong>Ação recomendada:</strong> {acao}</p>
@@ -607,11 +612,11 @@ if analisar:
 
     with res2:
         st.markdown(f"""
-<div class="kpi-card kpi-ok" style="text-align:center; margin-bottom:0.5rem;">
+<div class="kpi-card" style="text-align:center; margin-bottom:0.5rem; border-top:3px solid {risk_color};">
   <div class="kpi-label">Probabilidade</div>
-  <div class="kpi-value" style="font-size:1.6rem;">{probabilidade:.0f}%</div>
+  <div class="kpi-value" style="font-size:1.6rem; color:{risk_color};">{probabilidade:.0f}%</div>
 </div>
-<div class="kpi-card kpi-ok" style="text-align:center;">
+<div class="kpi-card" style="text-align:center; border-top:3px solid {risk_color};">
   <div class="kpi-label">Classificação Binária</div>
   <div class="kpi-value">{"Inadimplente" if classe == 1 else "Adimplente"}</div>
 </div>
