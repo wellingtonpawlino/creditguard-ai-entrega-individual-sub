@@ -18,8 +18,15 @@ def _load_config(config_path: str) -> dict:
         return yaml.safe_load(f)
 
 
+def _sanitize_columns(df: pd.DataFrame) -> pd.DataFrame:
+    import re
+    df.columns = [re.sub(r'[:\[\]{}".,\s]+', '_', c).strip('_') for c in df.columns]
+    return df
+
+
 def load_abt(filepath: str) -> pd.DataFrame:
-    return pd.read_csv(filepath)
+    df = pd.read_csv(filepath)
+    return _sanitize_columns(df)
 
 
 def split_features_target(

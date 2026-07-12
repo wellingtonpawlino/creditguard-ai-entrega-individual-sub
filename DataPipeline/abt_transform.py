@@ -12,10 +12,18 @@ def load_clean_data(filepath: str) -> pd.DataFrame:
     return pd.read_csv(filepath)
 
 
+def sanitize_column_names(df: pd.DataFrame) -> pd.DataFrame:
+    # LightGBM rejeita nomes com caracteres especiais JSON (ex: ":" em
+    # "ORGANIZATION_TYPE_Industry: type 1" gerado pelo get_dummies).
+    import re
+    df.columns = [re.sub(r'[:\[\]{}".,\s]+', '_', c).strip('_') for c in df.columns]
+    return df
+
+
 def encode_categorical(df: pd.DataFrame) -> pd.DataFrame:
     # Reproduz exatamente pd.get_dummies(X, drop_first=True) do notebook original.
-    # A lista de colunas resultante é idêntica ao features.joblib atual (119 colunas).
-    return pd.get_dummies(df, drop_first=True)
+    encoded = pd.get_dummies(df, drop_first=True)
+    return sanitize_column_names(encoded)
 
 
 def run_transform(

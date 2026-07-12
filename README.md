@@ -122,13 +122,15 @@ python Model/train.py
 
 Saída gerada: `Model/artifacts/lgbm_balanced_model.joblib` e `Model/artifacts/features.joblib`.
 
-Métricas esperadas ao final do treinamento (comparativo com XGBoost histórico):
+Métricas obtidas no treinamento completo (307.511 registros, split 80/20):
 
-| Métrica | XGBoost Balanced (v1) | LightGBM Balanced (v2) |
+| Métrica | LightGBM Balanced (v2) | XGBoost Balanced (v1) |
 |---|---|---|
-| ROC-AUC | 0,7509 | a avaliar após retreinamento |
-| Recall  | 0,6568 | a avaliar após retreinamento |
-| Gini    | 0,5019 | a avaliar após retreinamento |
+| ROC-AUC | **0,7524** | 0,7509 |
+| Recall  | **0,6606** | 0,6568 |
+| Gini    | **0,5049** | 0,5019 |
+| KS      | **0,3736** | 0,3694 |
+| Tempo   | **2,89 s** | 4,00 s |
 
 ### 4. Avaliar o modelo
 
