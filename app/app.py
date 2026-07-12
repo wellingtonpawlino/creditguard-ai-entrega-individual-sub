@@ -123,8 +123,8 @@ div[data-testid="column"] {
 
 /* ── Botão primário ── */
 .stButton > button[kind="primary"] {
-    background-color: #F97316 !important;
-    border-color:     #F97316 !important;
+    background-color: #374151 !important;
+    border-color:     #374151 !important;
     color:            #FFFFFF !important;
     font-weight: 700;
     font-size:   1rem;
@@ -133,8 +133,8 @@ div[data-testid="column"] {
     transition:  background 0.2s;
 }
 .stButton > button[kind="primary"]:hover {
-    background-color: #EA580C !important;
-    border-color:     #EA580C !important;
+    background-color: #1F2937 !important;
+    border-color:     #1F2937 !important;
 }
 
 /* ── Header ── */
@@ -566,20 +566,23 @@ if analisar:
     classe        = resultado["prediction"]
 
     if probabilidade < 30:
-        nivel    = "BAIXO RISCO"
-        card_cls = "result-card-low"
-        emoji    = "✅"
-        acao     = "Aprovação automática recomendada."
+        nivel       = "BAIXO RISCO"
+        card_cls    = "result-card-low"
+        emoji       = "✅"
+        acao        = "Aprovação automática recomendada."
+        prob_color  = "#4ADE80"   # verde esmeralda — positivo, legível sobre cinza escuro
     elif probabilidade < 60:
-        nivel    = "MÉDIO RISCO"
-        card_cls = "result-card-mid"
-        emoji    = "⚠️"
-        acao     = "Análise complementar recomendada antes da aprovação."
+        nivel       = "MÉDIO RISCO"
+        card_cls    = "result-card-mid"
+        emoji       = "⚠️"
+        acao        = "Análise complementar recomendada antes da aprovação."
+        prob_color  = "#FFFFFF"
     else:
-        nivel    = "ALTO RISCO"
-        card_cls = "result-card-high"
-        emoji    = "🚨"
-        acao     = "Revisão manual da proposta obrigatória."
+        nivel       = "ALTO RISCO"
+        card_cls    = "result-card-high"
+        emoji       = "🚨"
+        acao        = "Revisão manual da proposta obrigatória."
+        prob_color  = "#FCA5A5"   # vermelho rosado suave — legível sobre vermelho escuro
 
     bar_pct = min(int(probabilidade), 100)
 
@@ -592,7 +595,7 @@ if analisar:
 <div class="result-card {card_cls}">
   <p class="result-nivel">{nivel}</p>
   <p class="result-emoji">{emoji}</p>
-  <p class="result-prob">{probabilidade:.0f}%</p>
+  <p class="result-prob" style="color:{prob_color};">{probabilidade:.0f}%</p>
   <p class="result-prob-label">Probabilidade de Inadimplência</p>
   <div class="prob-bar-track">
     <div class="prob-bar-fill" style="width:{bar_pct}%;"></div>
