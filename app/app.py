@@ -51,164 +51,261 @@ st.set_page_config(
 )
 
 
+# ── HELPERS ───────────────────────────────────────────────────────────────────
+def _fmt(v: float) -> str:
+    return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+
+def _alerta(tipo: str, texto: str) -> str:
+    mapa = {
+        "info":    ("alerta-info",    "ℹ️"),
+        "atencao": ("alerta-atencao", "⚠️"),
+        "critico": ("alerta-critico", "🚨"),
+        "ok":      ("alerta-ok",      "✅"),
+    }
+    cls, icone = mapa.get(tipo, ("alerta-info", "ℹ️"))
+    return f'<div class="{cls}">{icone} {texto}</div>'
+
+
+def _kpi(label: str, valor: str, bench: str, status: str = "ok") -> str:
+    return (
+        f'<div class="kpi-card kpi-{status}">'
+        f'<div class="kpi-label">{label}</div>'
+        f'<div class="kpi-value">{valor}</div>'
+        f'<div class="kpi-bench">{bench}</div>'
+        f'</div>'
+    )
+
+
 # ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-:root {
-    --orange: #F97316;
-    --dark:   #374151;
-    --light:  #F3F4F6;
-    --bg:     #FAFAFA;
-    --card:   #FFFFFF;
-}
 
-.stApp { background-color: var(--bg); }
+/* ── Paleta exclusiva ──────────────────────────────────────────────────────── */
+/* #F97316  laranja            */
+/* #EA580C  laranja escuro     */
+/* #1F2937  cinza escuro       */
+/* #374151  cinza médio        */
+/* #F3F4F6  cinza claro        */
+/* #FFFFFF  branco             */
+/* #DC2626  vermelho (alertas críticos e ALTO RISCO) */
 
-/* Botão primário laranja */
+/* ── Base ── */
+.stApp { background-color: #F3F4F6; }
+
+/* ── Botão primário ── */
 .stButton > button[kind="primary"] {
     background-color: #F97316 !important;
-    border-color: #F97316 !important;
-    color: #FFFFFF !important;
+    border-color:     #F97316 !important;
+    color:            #FFFFFF !important;
     font-weight: 700;
-    font-size: 1rem;
-    padding: 0.6rem 1.5rem;
+    font-size:   1rem;
+    padding:     0.65rem 1.5rem;
     border-radius: 8px;
+    transition:  background 0.2s;
 }
 .stButton > button[kind="primary"]:hover {
-    background-color: #EA6C0A !important;
-    border-color: #EA6C0A !important;
+    background-color: #EA580C !important;
+    border-color:     #EA580C !important;
 }
 
+/* ── Header ── */
 .header-container {
     background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
-    padding: 1.8rem 2rem 1.4rem;
+    padding:       1.8rem 2rem 1.4rem;
     border-radius: 12px;
     margin-bottom: 1.5rem;
-    border-left: 6px solid #F97316;
+    border-left:   6px solid #F97316;
 }
 .header-title { color: #FFFFFF; font-size: 1.9rem; font-weight: 800; margin: 0; }
 .header-sub   { color: #D1D5DB; font-size: 0.95rem; margin-top: 0.25rem; }
 .header-badge {
-    display: inline-block;
-    background: #F97316;
-    color: #FFFFFF;
-    padding: 0.18rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    margin-top: 0.55rem;
-    letter-spacing: 0.04em;
+    display:          inline-block;
+    background:       #F97316;
+    color:            #FFFFFF;
+    padding:          0.18rem 0.75rem;
+    border-radius:    20px;
+    font-size:        0.72rem;
+    font-weight:      700;
+    margin-top:       0.55rem;
+    letter-spacing:   0.04em;
 }
 
+/* ── Títulos de seção ── */
 .section-title {
-    color: #374151;
-    font-size: 0.78rem;
-    font-weight: 800;
+    color:          #1F2937;
+    font-size:      0.76rem;
+    font-weight:    800;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    border-bottom: 2px solid #F97316;
+    border-bottom:  2px solid #F97316;
     padding-bottom: 0.35rem;
-    margin-bottom: 0.9rem;
-    margin-top: 0.2rem;
+    margin-bottom:  0.9rem;
+    margin-top:     0.5rem;
 }
 
-.summary-card {
-    background: #FFFFFF;
-    border: 1px solid #E5E7EB;
-    border-radius: 10px;
-    padding: 1rem 1.3rem;
-    margin-bottom: 0.9rem;
+/* ── Info box (Valor Total do Bem) ── */
+.info-box {
+    background:    #FFFFFF;
+    border-left:   4px solid #F97316;
+    padding:       0.7rem 1rem;
+    border-radius: 0 8px 8px 0;
+    color:         #374151;
+    font-size:     0.88rem;
+    margin:        0.5rem 0 1rem;
+    box-shadow:    0 1px 3px rgba(0,0,0,0.06);
 }
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.32rem 0;
-    border-bottom: 1px solid #F3F4F6;
-    font-size: 0.88rem;
-}
-.summary-row:last-child { border-bottom: none; }
-.summary-label { color: #6B7280; }
-.summary-value { color: #374151; font-weight: 700; }
 
-/* Cards de resultado */
+/* ── Alertas ── */
+.alerta-info, .alerta-atencao, .alerta-critico, .alerta-ok {
+    padding:       0.65rem 1rem;
+    border-radius: 0 8px 8px 0;
+    color:         #1F2937;
+    font-size:     0.87rem;
+    margin:        0.35rem 0;
+    line-height:   1.45;
+    font-weight:   500;
+}
+.alerta-info    { background: #FFF7ED; border-left: 4px solid #F97316; }
+.alerta-atencao { background: #FFE7CC; border-left: 4px solid #EA580C; }
+.alerta-critico { background: #FEE2E2; border-left: 4px solid #DC2626; }
+.alerta-ok      { background: #F3F4F6; border-left: 4px solid #374151; }
+
+/* ── Resumo da Operação — grid de cards ── */
+.op-grid {
+    display:               grid;
+    grid-template-columns: 1fr 1fr;
+    gap:                   0.5rem;
+    margin-bottom:         0.9rem;
+}
+.op-item {
+    background:    #FFFFFF;
+    border-radius: 8px;
+    padding:       0.65rem 0.85rem;
+    box-shadow:    0 1px 3px rgba(0,0,0,0.07);
+    border-top:    3px solid #F97316;
+}
+.op-label { font-size: 0.69rem; color: #374151; text-transform: uppercase; letter-spacing: 0.06em; }
+.op-value { font-size: 0.95rem; font-weight: 700; color: #1F2937; margin-top: 0.15rem; }
+
+/* ── KPI Cards (Indicadores) ── */
+.kpi-grid {
+    display:               grid;
+    grid-template-columns: 1fr 1fr;
+    gap:                   0.5rem;
+    margin-bottom:         0.9rem;
+}
+.kpi-card {
+    background:    #FFFFFF;
+    border-radius: 8px;
+    padding:       0.75rem 0.9rem;
+    box-shadow:    0 1px 4px rgba(0,0,0,0.08);
+    border-top:    3px solid #F3F4F6;
+}
+.kpi-ok      { border-top-color: #374151; }
+.kpi-warn    { border-top-color: #F97316; }
+.kpi-critico { border-top-color: #DC2626; }
+.kpi-label { font-size: 0.69rem; color: #374151; text-transform: uppercase; letter-spacing: 0.06em; }
+.kpi-value { font-size: 1.25rem; font-weight: 800; color: #1F2937; margin: 0.15rem 0 0.05rem; }
+.kpi-bench { font-size: 0.71rem; color: #6B7280; }
+
+/* ── Card principal de decisão ── */
 .result-card {
-    border-radius: 12px;
-    padding: 1.6rem 1.8rem;
-    text-align: center;
+    border-radius: 14px;
+    padding:       2rem 1.8rem;
+    text-align:    center;
     margin-bottom: 1rem;
+    box-shadow:    0 6px 24px rgba(0,0,0,0.18);
 }
-.result-low  { background: #D1FAE5; border: 2px solid #10B981; }
-.result-mid  { background: #FEF3C7; border: 2px solid #F59E0B; }
-.result-high { background: #FEE2E2; border: 2px solid #EF4444; }
+.result-card-low  { background: linear-gradient(135deg, #1F2937 0%, #374151 100%); }
+.result-card-mid  { background: linear-gradient(135deg, #EA580C 0%, #F97316 100%); }
+.result-card-high { background: linear-gradient(135deg, #7F1D1D 0%, #DC2626 100%); }
 
-.result-nivel { font-size: 1.5rem; font-weight: 800; margin: 0; }
-.color-low  { color: #065F46; }
-.color-mid  { color: #92400E; }
-.color-high { color: #991B1B; }
+.result-nivel      { font-size: 0.76rem; font-weight: 800; text-transform: uppercase;
+                     letter-spacing: 0.14em; color: rgba(255,255,255,0.7); margin: 0; }
+.result-emoji      { font-size: 2.2rem; margin: 0.4rem 0 0.1rem; }
+.result-prob       { font-size: 3.4rem; font-weight: 900; color: #FFFFFF;
+                     margin: 0; line-height: 1.05; }
+.result-prob-label { font-size: 0.78rem; color: rgba(255,255,255,0.65); margin-bottom: 0.9rem; }
+.result-divider    { border: none; border-top: 1px solid rgba(255,255,255,0.2); margin: 0.75rem 0; }
+.result-acao       { font-size: 0.88rem; color: rgba(255,255,255,0.9); }
 
-.result-prob { font-size: 2.6rem; font-weight: 900; margin: 0.4rem 0 0.15rem; }
-.result-sub  { color: #6B7280; font-size: 0.85rem; }
-.result-acao { font-size: 0.9rem; margin-top: 0.6rem; }
-
-.footer-bar {
-    background: #F3F4F6;
-    border-top: 1px solid #E5E7EB;
-    padding: 0.7rem 1.2rem;
-    border-radius: 8px;
-    margin-top: 2rem;
-    font-size: 0.78rem;
-    color: #6B7280;
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+.prob-bar-track {
+    background:    rgba(255,255,255,0.22);
+    border-radius: 99px;
+    height:        7px;
+    margin:        0.5rem 0 0.3rem;
+    overflow:      hidden;
+}
+.prob-bar-fill {
+    background:    rgba(255,255,255,0.9);
+    height:        7px;
+    border-radius: 99px;
 }
 
-.sidebar-chip {
-    background: #F9FAFB;
-    border-radius: 8px;
-    padding: 0.55rem 0.9rem;
+/* ── Sidebar ── */
+.sidebar-card {
+    background:    #FFFFFF;
+    border:        1px solid #F97316;
+    border-radius: 10px;
+    padding:       0.6rem 0.9rem;
     margin-bottom: 0.45rem;
-    border-left: 3px solid #F97316;
+    box-shadow:    0 2px 6px rgba(249,115,22,0.10);
 }
-.chip-label { font-size: 0.7rem; color: #9CA3AF; text-transform: uppercase; letter-spacing: 0.06em; }
-.chip-value { font-size: 0.95rem; font-weight: 700; color: #374151; }
+.chip-label { font-size: 0.67rem; color: #6B7280; text-transform: uppercase; letter-spacing: 0.07em; }
+.chip-value { font-size: 0.95rem; font-weight: 700; color: #1F2937; }
+
+/* ── Rodapé ── */
+.footer-bar {
+    background:     #1F2937;
+    border-radius:  8px;
+    padding:        0.7rem 1.2rem;
+    margin-top:     2rem;
+    font-size:      0.78rem;
+    color:          #9CA3AF;
+    display:        flex;
+    justify-content: space-between;
+    flex-wrap:      wrap;
+    gap:            0.5rem;
+}
+.footer-bar strong { color: #F97316; }
+
 </style>
 """, unsafe_allow_html=True)
 
 
 # ── SIDEBAR ───────────────────────────────────────────────────────────────────
-def _fmt(v):
-    return "R$ " + f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-
-
 model_version = os.environ.get("MODEL_VERSION", "v2")
-n_features = len(_features_list)
+n_features    = len(_features_list)
 
 with st.sidebar:
     st.markdown("### 🛡️ CreditGuard AI")
     st.markdown("---")
 
     st.markdown("**Status do Sistema**")
-    st.success("✅ Modelo carregado")
-    st.success("✅ Aplicação operacional")
+    for txt in ["✅ Modelo carregado", "✅ Aplicação operacional"]:
+        st.markdown(
+            f'<div class="sidebar-card"><div class="chip-value">{txt}</div></div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("---")
     st.markdown("**Modelo em Produção**")
-    st.markdown(f"""
-<div class="sidebar-chip"><div class="chip-label">Algoritmo</div>
-<div class="chip-value">LightGBM Balanced</div></div>
-<div class="sidebar-chip"><div class="chip-label">Versão</div>
-<div class="chip-value">{model_version}</div></div>
-<div class="sidebar-chip"><div class="chip-label">Features</div>
-<div class="chip-value">{n_features} variáveis</div></div>
-<div class="sidebar-chip"><div class="chip-label">ROC-AUC</div>
-<div class="chip-value">0,7524</div></div>
-<div class="sidebar-chip"><div class="chip-label">Recall</div>
-<div class="chip-value">66,06%</div></div>
-<div class="sidebar-chip"><div class="chip-label">Cobertura preditiva</div>
-<div class="chip-value">84,9% do gain</div></div>
-""", unsafe_allow_html=True)
+    for label, value in [
+        ("Algoritmo",           "LightGBM Balanced"),
+        ("Versão",              model_version),
+        ("Features",            f"{n_features} variáveis"),
+        ("ROC-AUC",             "0,7524"),
+        ("Recall",              "66,06%"),
+        ("Cobertura preditiva", "84,9% do gain"),
+    ]:
+        st.markdown(
+            f'<div class="sidebar-card">'
+            f'<div class="chip-label">{label}</div>'
+            f'<div class="chip-value">{value}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("---")
     st.markdown("**Scores de Bureau (EXT_SOURCE)**")
@@ -238,12 +335,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── FORMULÁRIO ────────────────────────────────────────────────────────────────
+# ── LAYOUT PRINCIPAL ──────────────────────────────────────────────────────────
 col_form, col_panel = st.columns([3, 2], gap="large")
 
 with col_form:
 
-    # — Dados Financeiros —
+    # — Dados Financeiros ──────────────────────────────────────────────────────
     st.markdown('<p class="section-title">💰 Dados Financeiros</p>', unsafe_allow_html=True)
 
     ff1, ff2 = st.columns(2)
@@ -251,154 +348,153 @@ with col_form:
         amt_income = st.number_input(
             "Renda Anual do Cliente (R$)",
             min_value=0.0, value=150000.0, step=1000.0, format="%.2f",
-            help="Renda anual bruta declarada (AMT_INCOME_TOTAL)."
+            help="Renda anual bruta declarada (AMT_INCOME_TOTAL).",
         )
         amt_credit = st.number_input(
             "Valor do Crédito (R$)",
             min_value=0.0, value=300000.0, step=1000.0, format="%.2f",
-            help="Valor total do crédito solicitado (AMT_CREDIT)."
+            help="Valor total do crédito solicitado (AMT_CREDIT).",
         )
     with ff2:
         amt_annuity = st.number_input(
             "Valor da Parcela Anual (R$)",
             min_value=0.0, value=25000.0, step=500.0, format="%.2f",
-            help="Compromisso anual de pagamento do empréstimo (AMT_ANNUITY)."
+            help="Compromisso anual de pagamento do empréstimo (AMT_ANNUITY).",
         )
         down_payment = st.number_input(
             "Valor de Entrada (R$)",
             min_value=0.0, value=0.0, step=1000.0, format="%.2f",
-            help="Valor pago pelo cliente com recursos próprios."
+            help="Valor pago pelo cliente com recursos próprios.",
         )
 
     valor_total_bem = amt_credit + down_payment
-    st.info(f"💡 **Valor Total do Bem:** {_fmt(valor_total_bem)}  ·  Calculado como Crédito + Entrada")
+    st.markdown(
+        f'<div class="info-box">💡 <strong>Valor Total do Bem:</strong> {_fmt(valor_total_bem)}'
+        f'&nbsp;·&nbsp;Calculado como Crédito + Entrada</div>',
+        unsafe_allow_html=True,
+    )
 
-    st.markdown("---")
-
-    # — Perfil do Cliente —
+    # — Perfil do Cliente ──────────────────────────────────────────────────────
     st.markdown('<p class="section-title">👤 Perfil do Cliente</p>', unsafe_allow_html=True)
 
     pf1, pf2, pf3 = st.columns(3)
     with pf1:
         idade = st.number_input(
             "Idade (anos)", min_value=18, max_value=100, value=35,
-            help="Convertida para DAYS_BIRTH = -(idade × 365)."
+            help="Convertida para DAYS_BIRTH = -(idade × 365).",
         )
     with pf2:
         tempo_emprego = st.number_input(
             "Tempo de Emprego (anos)", min_value=0, max_value=60, value=5,
-            help="Anos no emprego atual → DAYS_EMPLOYED = -(anos × 365)."
+            help="Anos no emprego atual → DAYS_EMPLOYED = -(anos × 365).",
         )
     with pf3:
         cnt_children = st.number_input(
             "Nº de Filhos", min_value=0, value=0,
-            help="Filhos dependentes (CNT_CHILDREN)."
+            help="Filhos dependentes (CNT_CHILDREN).",
         )
 
-    st.markdown("---")
-
-    # — Scores de Crédito —
+    # — Scores de Crédito ──────────────────────────────────────────────────────
     st.markdown('<p class="section-title">📊 Scores de Crédito (Bureau 0 – 1)</p>', unsafe_allow_html=True)
 
     sc1, sc2, sc3 = st.columns(3)
     with sc1:
         ext_source_1 = st.number_input(
             "Bureau 1", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
-            help="EXT_SOURCE_1 — 3º maior preditor do modelo."
+            help="EXT_SOURCE_1 — 3º maior preditor do modelo.",
         )
     with sc2:
         ext_source_2 = st.number_input(
             "Bureau 2", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
-            help="EXT_SOURCE_2 — 2º maior preditor (gain 157.687)."
+            help="EXT_SOURCE_2 — 2º maior preditor (gain 157.687).",
         )
     with sc3:
         ext_source_3 = st.number_input(
             "Bureau 3", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
-            help="EXT_SOURCE_3 — Maior preditor do modelo (gain 191.174)."
+            help="EXT_SOURCE_3 — Maior preditor do modelo (gain 191.174).",
         )
 
 
 with col_panel:
 
-    # — Resumo da Operação —
+    # Métricas derivadas
+    renda_mensal  = amt_income / 12 if amt_income > 0 else 1.0
+    ltv           = (amt_credit / valor_total_bem * 100) if valor_total_bem > 0 else 0.0
+    debt_burden   = (amt_annuity / 12 / renda_mensal * 100) if renda_mensal > 0 else 0.0
+    entrada_pct   = (down_payment / valor_total_bem * 100) if valor_total_bem > 0 else 0.0
+
+    # — Resumo da Operação ─────────────────────────────────────────────────────
     st.markdown('<p class="section-title">📋 Resumo da Operação</p>', unsafe_allow_html=True)
-
-    renda_mensal = amt_income / 12 if amt_income > 0 else 1.0
-
     st.markdown(f"""
-<div class="summary-card">
-  <div class="summary-row">
-    <span class="summary-label">Crédito Solicitado</span>
-    <span class="summary-value">{_fmt(amt_credit)}</span>
+<div class="op-grid">
+  <div class="op-item">
+    <div class="op-label">Crédito Solicitado</div>
+    <div class="op-value">{_fmt(amt_credit)}</div>
   </div>
-  <div class="summary-row">
-    <span class="summary-label">Entrada</span>
-    <span class="summary-value">{_fmt(down_payment)}</span>
+  <div class="op-item">
+    <div class="op-label">Entrada</div>
+    <div class="op-value">{_fmt(down_payment)}</div>
   </div>
-  <div class="summary-row">
-    <span class="summary-label">Valor Total do Bem</span>
-    <span class="summary-value">{_fmt(valor_total_bem)}</span>
+  <div class="op-item">
+    <div class="op-label">Valor Total do Bem</div>
+    <div class="op-value">{_fmt(valor_total_bem)}</div>
   </div>
-  <div class="summary-row">
-    <span class="summary-label">Parcela Anual</span>
-    <span class="summary-value">{_fmt(amt_annuity)}</span>
+  <div class="op-item">
+    <div class="op-label">Parcela Mensal (est.)</div>
+    <div class="op-value">{_fmt(amt_annuity / 12)}</div>
   </div>
-  <div class="summary-row">
-    <span class="summary-label">Parcela Mensal (est.)</span>
-    <span class="summary-value">{_fmt(amt_annuity / 12)}</span>
+  <div class="op-item">
+    <div class="op-label">Parcela Anual</div>
+    <div class="op-value">{_fmt(amt_annuity)}</div>
   </div>
-  <div class="summary-row">
-    <span class="summary-label">Renda Anual</span>
-    <span class="summary-value">{_fmt(amt_income)}</span>
+  <div class="op-item">
+    <div class="op-label">Renda Anual</div>
+    <div class="op-value">{_fmt(amt_income)}</div>
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-    # — Indicadores Financeiros —
+    # — Indicadores ────────────────────────────────────────────────────────────
     st.markdown('<p class="section-title">📈 Indicadores</p>', unsafe_allow_html=True)
 
-    ltv          = (amt_credit / valor_total_bem * 100) if valor_total_bem > 0 else 0.0
-    debt_burden  = (amt_annuity / 12 / renda_mensal * 100) if renda_mensal > 0 else 0.0
-    cred_renda   = (amt_credit / amt_income * 100) if amt_income > 0 else 0.0
+    ltv_st    = "ok" if ltv <= 80 else ("warn" if ltv <= 90 else "critico")
+    debt_st   = "ok" if debt_burden <= 30 else ("warn" if debt_burden <= 40 else "critico")
+    entr_st   = "ok" if entrada_pct >= 20 else ("warn" if entrada_pct >= 10 else "critico")
+    emp_st    = "ok" if tempo_emprego >= 2 else ("warn" if tempo_emprego >= 1 else "critico")
 
-    ind1, ind2 = st.columns(2)
-    with ind1:
-        st.metric("LTV", f"{ltv:.1f}%",
-                  help="Crédito / Valor do Bem. Saudável abaixo de 80%.")
-    with ind2:
-        st.metric("Comprometimento", f"{debt_burden:.1f}%",
-                  help="Parcela mensal / Renda mensal. Risco elevado acima de 30%.")
+    st.markdown(f"""
+<div class="kpi-grid">
+  {_kpi("LTV", f"{ltv:.1f}%", "Ideal: &lt; 80%", ltv_st)}
+  {_kpi("Comprometimento", f"{debt_burden:.1f}%", "Ideal: &lt; 30%", debt_st)}
+  {_kpi("Entrada (%)", f"{entrada_pct:.1f}%", "Ideal: &gt; 20%", entr_st)}
+  {_kpi("Tempo de Emprego", f"{tempo_emprego} ano{'s' if tempo_emprego != 1 else ''}", "Ideal: &gt; 2 anos", emp_st)}
+</div>
+""", unsafe_allow_html=True)
 
-    # — Alertas de Negócio —
+    # — Alertas de Negócio ─────────────────────────────────────────────────────
     st.markdown('<p class="section-title">⚠️ Alertas</p>', unsafe_allow_html=True)
 
     alertas = []
 
     if amt_credit > amt_income:
-        st.warning("Crédito superior à renda anual informada.")
-        alertas.append("credito_renda")
-
+        alertas.append(_alerta("atencao", "Crédito superior à renda anual informada."))
     if tempo_emprego < 1:
-        st.info("Cliente com menos de 1 ano de emprego atual.")
-        alertas.append("emprego")
-
+        alertas.append(_alerta("info", "Cliente com menos de 1 ano de emprego atual."))
     if amt_annuity > renda_mensal * 0.4:
-        st.warning("Parcela representa mais de 40% da renda mensal.")
-        alertas.append("parcela")
-
+        alertas.append(_alerta("critico", "Parcela representa mais de 40% da renda mensal."))
     if ltv > 90:
-        st.warning(f"LTV elevado ({ltv:.1f}%) — crédito cobre mais de 90% do bem.")
-        alertas.append("ltv")
-
+        alertas.append(_alerta("critico", f"LTV elevado ({ltv:.1f}%) — crédito cobre mais de 90% do bem."))
+    elif ltv > 80:
+        alertas.append(_alerta("atencao", f"LTV moderado ({ltv:.1f}%) — acima do ideal de 80%."))
     if down_payment >= amt_credit and down_payment > 0:
-        st.success("Entrada elevada em relação ao valor financiado.")
-        alertas.append("entrada_ok")
-
+        alertas.append(_alerta("ok", "Entrada elevada em relação ao valor financiado."))
     if not alertas:
-        st.success("✅ Nenhum alerta de negócio identificado.")
+        alertas.append(_alerta("ok", "Nenhum alerta de negócio identificado."))
+
+    st.markdown("\n".join(alertas), unsafe_allow_html=True)
 
 
-# ── BOTÃO DE ANÁLISE ──────────────────────────────────────────────────────────
+# ── BOTÃO ─────────────────────────────────────────────────────────────────────
 st.markdown("---")
 analisar = st.button("🔍 Analisar Cliente", type="primary", use_container_width=True)
 
@@ -410,16 +506,16 @@ if analisar:
     amt_goods_price = amt_credit + down_payment
 
     inputs = {
-        "AMT_INCOME_TOTAL":  amt_income,
-        "AMT_CREDIT":        amt_credit,
-        "AMT_ANNUITY":       amt_annuity,
-        "AMT_GOODS_PRICE":   amt_goods_price,
-        "CNT_CHILDREN":      cnt_children,
-        "DAYS_BIRTH":        -(idade * 365),
-        "DAYS_EMPLOYED":     -(tempo_emprego * 365),
-        "EXT_SOURCE_1":      ext_source_1,
-        "EXT_SOURCE_2":      ext_source_2,
-        "EXT_SOURCE_3":      ext_source_3,
+        "AMT_INCOME_TOTAL": amt_income,
+        "AMT_CREDIT":       amt_credit,
+        "AMT_ANNUITY":      amt_annuity,
+        "AMT_GOODS_PRICE":  amt_goods_price,
+        "CNT_CHILDREN":     cnt_children,
+        "DAYS_BIRTH":       -(idade * 365),
+        "DAYS_EMPLOYED":    -(tempo_emprego * 365),
+        "EXT_SOURCE_1":     ext_source_1,
+        "EXT_SOURCE_2":     ext_source_2,
+        "EXT_SOURCE_3":     ext_source_3,
     }
 
     sys.stderr.write(f"[APP] inputs: {inputs}\n")
@@ -440,25 +536,23 @@ if analisar:
     probabilidade = resultado["probability"] * 100
     classe        = resultado["prediction"]
 
-    # Três níveis de risco
     if probabilidade < 30:
-        nivel      = "BAIXO RISCO"
-        card_cls   = "result-low"
-        color_cls  = "color-low"
-        emoji      = "✅"
-        acao       = "Aprovação automática recomendada."
+        nivel    = "BAIXO RISCO"
+        card_cls = "result-card-low"
+        emoji    = "✅"
+        acao     = "Aprovação automática recomendada."
     elif probabilidade < 60:
-        nivel      = "MÉDIO RISCO"
-        card_cls   = "result-mid"
-        color_cls  = "color-mid"
-        emoji      = "⚠️"
-        acao       = "Análise complementar recomendada antes da aprovação."
+        nivel    = "MÉDIO RISCO"
+        card_cls = "result-card-mid"
+        emoji    = "⚠️"
+        acao     = "Análise complementar recomendada antes da aprovação."
     else:
-        nivel      = "ALTO RISCO"
-        card_cls   = "result-high"
-        color_cls  = "color-high"
-        emoji      = "🚨"
-        acao       = "Revisão manual da proposta obrigatória."
+        nivel    = "ALTO RISCO"
+        card_cls = "result-card-high"
+        emoji    = "🚨"
+        acao     = "Revisão manual da proposta obrigatória."
+
+    bar_pct = min(int(probabilidade), 100)
 
     st.markdown("### Resultado da Análise")
 
@@ -467,29 +561,37 @@ if analisar:
     with res1:
         st.markdown(f"""
 <div class="result-card {card_cls}">
-  <p class="result-nivel {color_cls}">{emoji} {nivel}</p>
-  <p class="result-prob {color_cls}">{probabilidade:.1f}%</p>
-  <p class="result-sub">Probabilidade de Inadimplência</p>
-  <p class="result-acao"><strong>Ação recomendada:</strong> {acao}</p>
+  <p class="result-nivel">{nivel}</p>
+  <p class="result-emoji">{emoji}</p>
+  <p class="result-prob">{probabilidade:.1f}%</p>
+  <p class="result-prob-label">Probabilidade de Inadimplência</p>
+  <div class="prob-bar-track">
+    <div class="prob-bar-fill" style="width:{bar_pct}%;"></div>
+  </div>
+  <hr class="result-divider">
+  <p class="result-acao">📋 <strong>Ação recomendada:</strong> {acao}</p>
 </div>
 """, unsafe_allow_html=True)
 
     with res2:
-        st.markdown("**Gauge de Probabilidade**")
-        st.progress(min(probabilidade / 100, 1.0))
-        st.caption(f"{probabilidade:.1f}% de chance de inadimplência")
-
-        st.markdown("---")
-        st.metric("Probabilidade", f"{probabilidade:.1f}%")
-        st.metric("Classificação Binária", "Inadimplente" if classe == 1 else "Adimplente")
+        st.markdown(f"""
+<div class="kpi-card kpi-ok" style="text-align:center; margin-bottom:0.5rem;">
+  <div class="kpi-label">Probabilidade</div>
+  <div class="kpi-value" style="font-size:1.6rem;">{probabilidade:.1f}%</div>
+</div>
+<div class="kpi-card kpi-ok" style="text-align:center;">
+  <div class="kpi-label">Classificação Binária</div>
+  <div class="kpi-value">{"Inadimplente" if classe == 1 else "Adimplente"}</div>
+</div>
+""", unsafe_allow_html=True)
 
         with st.expander("🔧 Detalhes Técnicos"):
             st.json(resultado)
             st.json({
                 "AMT_GOODS_PRICE_calculado": amt_goods_price,
-                "AMT_GOODS_PRICE_formula": f"{amt_credit} + {down_payment}",
-                "DAYS_BIRTH": -(idade * 365),
-                "DAYS_EMPLOYED": -(tempo_emprego * 365),
+                "AMT_GOODS_PRICE_formula":   f"{amt_credit} + {down_payment}",
+                "DAYS_BIRTH":                -(idade * 365),
+                "DAYS_EMPLOYED":             -(tempo_emprego * 365),
             })
 
     sys.stderr.write("[APP] renderizacao concluida — sem crash\n")
