@@ -1,0 +1,12 @@
+{
+    "melhor_modelo": "LightGBM",
+    "roc_auc": 0.7778488223322214,
+    "average_precision": 0.2767886552436175,
+    "precision_classe_1": 0.18898912792042563,
+    "recall_classe_1": 0.6582074521651561,
+    "f1_classe_1": 0.2936604214404457,
+    "n_features_encoded": 309,
+    "random_state": 42,
+    "linhas_treino": 246008,
+    "linhas_teste": 61503
+}
