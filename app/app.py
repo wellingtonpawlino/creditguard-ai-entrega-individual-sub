@@ -403,12 +403,14 @@ with col_form:
             "Renda Anual do Cliente (R$)",
             min_value=0.0, value=150000.0, step=1000.0, format="%.2f",
             help="Renda anual bruta declarada (AMT_INCOME_TOTAL).",
+            key="amt_income",
         )
     with ff2:
         amt_credit = st.number_input(
             "Valor do Crédito Solicitado (R$)",
             min_value=0.0, value=300000.0, step=1000.0, format="%.2f",
             help="Valor total do crédito solicitado (AMT_CREDIT).",
+            key="amt_credit",
         )
 
     # — Perfil do Cliente ──────────────────────────────────────────────────────
@@ -419,16 +421,19 @@ with col_form:
         idade = st.number_input(
             "Idade do Cliente", min_value=18, max_value=100, value=35,
             help="Idade em anos inteiros. Convertida internamente para DAYS_BIRTH = -(idade × 365).",
+            key="idade",
         )
     with pf2:
         tempo_emprego = st.number_input(
             "Tempo no Emprego Atual", min_value=0, max_value=60, value=5,
             help="Anos no emprego atual. Convertido internamente para DAYS_EMPLOYED = -(anos × 365).",
+            key="tempo_emprego",
         )
     with pf3:
         cnt_children = st.number_input(
             "Número de Filhos", min_value=0, value=0,
             help="Filhos dependentes (CNT_CHILDREN).",
+            key="cnt_children",
         )
 
     # — Scores de Crédito ──────────────────────────────────────────────────────
@@ -439,16 +444,19 @@ with col_form:
         ext_source_1 = st.number_input(
             "Score Bureau 1", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
             help="EXT_SOURCE_1 — 3º maior preditor do modelo. 0,00 = risco máximo · 1,00 = risco mínimo.",
+            key="ext_source_1",
         )
     with sc2:
         ext_source_2 = st.number_input(
             "Score Bureau 2", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
             help="EXT_SOURCE_2 — 2º maior preditor (gain 157.687). 0,00 = risco máximo · 1,00 = risco mínimo.",
+            key="ext_source_2",
         )
     with sc3:
         ext_source_3 = st.number_input(
             "Score Bureau 3", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
             help="EXT_SOURCE_3 — Maior preditor do modelo (gain 191.174). 0,00 = risco máximo · 1,00 = risco mínimo.",
+            key="ext_source_3",
         )
     st.caption("Faixa válida: 0,00 a 1,00  ·  0,00 = risco máximo  ·  0,50 = neutro  ·  1,00 = risco mínimo")
 
@@ -514,9 +522,28 @@ with col_panel:
     st.markdown("\n".join(alertas), unsafe_allow_html=True)
 
 
-# ── BOTÃO ─────────────────────────────────────────────────────────────────────
+# ── BOTÕES ────────────────────────────────────────────────────────────────────
 st.markdown("---")
-analisar = st.button("🔍 Analisar Cliente", type="primary", use_container_width=True)
+
+_DEFAULTS = {
+    "amt_income":    150000.0,
+    "amt_credit":    300000.0,
+    "idade":         35,
+    "tempo_emprego": 5,
+    "cnt_children":  0,
+    "ext_source_1":  0.50,
+    "ext_source_2":  0.50,
+    "ext_source_3":  0.50,
+}
+
+btn_col1, btn_col2 = st.columns([3, 1])
+with btn_col1:
+    analisar = st.button("🔍 Analisar Cliente", type="primary", use_container_width=True)
+with btn_col2:
+    if st.button("🗑️ Limpar", use_container_width=True):
+        for _k, _v in _DEFAULTS.items():
+            st.session_state[_k] = _v
+        st.rerun()
 
 if analisar:
 
