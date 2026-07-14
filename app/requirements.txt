@@ -3,7 +3,7 @@ pandas
 joblib
 lightgbm
 xgboost
-scikit-learn
+scikit-learn==1.7.0
 numpy
 minio
 psycopg2-binary
