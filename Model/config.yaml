@@ -51,11 +51,13 @@ models:
     n_jobs:            -1
 
 artifacts:
-  preprocessor: Model/artifacts/preprocessor.joblib
-  model:        Model/artifacts/best_model.joblib
-  features:     Model/artifacts/features.joblib
-  comparison:   Model/artifacts/comparacao_modelos.csv
-  metadata:     Model/artifacts/metadata_modelo.json
+  preprocessor:     Model/artifacts/preprocessor.joblib
+  model:            Model/artifacts/best_model.joblib
+  features:         Model/artifacts/features.joblib
+  all_models:       Model/artifacts/all_models.joblib
+  predictions_test: Model/artifacts/predictions_test.joblib
+  comparison:       Model/artifacts/comparacao_modelos.csv
+  metadata:         Model/artifacts/metadata_modelo.json
 
 minio:
   bucket:  model-artifacts

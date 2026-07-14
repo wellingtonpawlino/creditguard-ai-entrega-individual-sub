@@ -84,6 +84,8 @@ def train_and_compare_models(X_train, y_train, X_test, y_test, cfg: dict):
 
     results = []
     trained_models = {}
+    probabilities_map = {}
+    predictions_map = {}
 
     for name, model in _build_models(cfg, scale_pos_weight):
         print(f"Treinando {name}...")
@@ -105,6 +107,8 @@ def train_and_compare_models(X_train, y_train, X_test, y_test, cfg: dict):
         }
         results.append(row)
         trained_models[name] = model
+        probabilities_map[name] = proba
+        predictions_map[name] = pred
         print(f"  ROC-AUC: {row['ROC_AUC']:.4f}  Recall: {row['Recall_Classe_1']:.4f}")
 
     comparison_df = (
@@ -112,7 +116,7 @@ def train_and_compare_models(X_train, y_train, X_test, y_test, cfg: dict):
         .sort_values("ROC_AUC", ascending=False)
         .reset_index(drop=True)
     )
-    return comparison_df, trained_models
+    return comparison_df, trained_models, probabilities_map, predictions_map
 
 
 def save_artifacts(
@@ -124,6 +128,10 @@ def save_artifacts(
     feature_names: list,
     X_train,
     X_test,
+    y_test,
+    trained_models: dict,
+    probabilities_map: dict,
+    predictions_map: dict,
     cfg: dict,
     use_minio: bool = False,
 ) -> None:
@@ -143,6 +151,11 @@ def save_artifacts(
         joblib.dump(preprocessor, arts["preprocessor"])
         joblib.dump(best_model, arts["model"])
         joblib.dump(feature_names, arts["features"])
+        joblib.dump(trained_models, arts["all_models"])
+        joblib.dump(
+            {"y_test": y_test, "proba": probabilities_map, "pred": predictions_map},
+            arts["predictions_test"],
+        )
         comparison_df.to_csv(arts["comparison"], index=False)
 
         metadata = {
@@ -162,8 +175,10 @@ def save_artifacts(
 
         print(f"\nArtefatos salvos em Model/artifacts/:")
         print(f"  preprocessor.joblib")
-        print(f"  best_model.joblib  ({best_model_name})")
-        print(f"  features.joblib    ({len(feature_names)} features brutas)")
+        print(f"  best_model.joblib      ({best_model_name})")
+        print(f"  features.joblib        ({len(feature_names)} features brutas)")
+        print(f"  all_models.joblib      ({len(trained_models)} modelos)")
+        print(f"  predictions_test.joblib")
         print(f"  comparacao_modelos.csv")
         print(f"  metadata_modelo.json")
 
@@ -198,7 +213,7 @@ def run_training(
     X_test_proc = preprocessor.transform(X_test)
     print(f"Features após encoding: {X_train_proc.shape[1]}")
 
-    comparison_df, trained_models = train_and_compare_models(
+    comparison_df, trained_models, probabilities_map, predictions_map = train_and_compare_models(
         X_train_proc, y_train, X_test_proc, y_test, model_cfg
     )
 
@@ -213,7 +228,9 @@ def run_training(
 
     save_artifacts(
         preprocessor, best_model, best_model_name, comparison_df, best_row,
-        X_train.columns.tolist(), X_train, X_test, model_cfg, use_minio=use_minio,
+        X_train.columns.tolist(), X_train, X_test, y_test,
+        trained_models, probabilities_map, predictions_map,
+        model_cfg, use_minio=use_minio,
     )
 
     if use_db:
