@@ -1,3 +1,30 @@
+"""
+DataPipeline/data_sanitization.py
+===================================
+Implementa a Parte A do notebook oficial:
+  docs/HomeCredit_Comparacao_Completa_Modelos_Explicado.ipynb
+
+  Seção 7  — safe_divide() + create_application_features()
+             8 features derivadas: CREDIT_INCOME_RATIO, ANNUITY_INCOME_RATIO,
+             CREDIT_ANNUITY_RATIO, CREDIT_GOODS_RATIO, DOWN_PAYMENT_VALUE,
+             AGE_YEARS, EMPLOYED_YEARS, EMPLOYED_AGE_RATIO
+
+  Seção 9  — create_bureau_features()
+             5 indicadores: DEBT_CREDIT_RATIO, OVERDUE_CREDIT_RATIO,
+             IS_ACTIVE, IS_CLOSED, IS_BAD_DEBT
+
+  Seções 10–11 — aggregate_bureau()
+             44 features numéricas BUREAU_* + BUREAU_STATUS_*_COUNT
+             + BUREAU_TYPE_*_COUNT (top-10 tipos por frequência)
+
+  Seção 12 — run_sanitization() executa o merge application + bureau
+             (left join, validate="one_to_one") e salva clean_data.csv
+
+Nota de design: SK_ID_CURR é removido aqui (antes de salvar) em vez de em
+Model/train.py. O resultado é equivalente ao X do notebook (185 features),
+mais TARGET. clean_data.csv: 307.511 linhas × 186 colunas.
+"""
+
 import pandas as pd
 import numpy as np
 import yaml

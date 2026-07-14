@@ -29,27 +29,59 @@ O projeto segue a metodologia **CRISP-DM**:
 1. **Business Understanding** — definição do problema de risco de crédito e da métrica prioritária (Recall)
 2. **Data Understanding** — análise exploratória do dataset Home Credit Default Risk (`exp_analysis.ipynb` em DataPipeline/)
 3. **Data Preparation** — sanitização, tratamento de nulos, feature engineering e encoding (`data_preparation.ipynb` em DataPipeline/)
-4. **Modeling** — treinamento do LightGBM Balanced com `scale_pos_weight` para lidar com o desbalanceamento de classes (`train.py`)
-5. **Evaluation** — avaliação de métricas ROC-AUC, Recall, Gini, KS e análise de importância de features (`evaluation.ipynb`)
+4. **Modeling** — treinamento comparativo de 5 modelos com `class_weight="balanced"` / `scale_pos_weight` para lidar com o desbalanceamento de classes (`train.py`)
+5. **Evaluation** — avaliação de métricas ROC-AUC, Recall, Precision, F1 e análise de importância de features (`evaluation.ipynb`)
 6. **Deployment** — serving via Streamlit containerizado com Docker Compose
 
-**Dataset:** Home Credit Default Risk (Kaggle) — 307.511 registros, 119 features após encoding, TARGET binário (0 = adimplente, 1 = inadimplente). Desbalanceamento: 91,93% adimplentes / 8,07% inadimplentes.
+**Dataset:** Home Credit Default Risk (Kaggle) — 307.511 registros, 185 features brutas (sem encoding), TARGET binário (0 = adimplente, 1 = inadimplente). Desbalanceamento: 91,93% adimplentes / 8,07% inadimplentes (razão ≈ 11,4:1).
+
+---
+
+## Comparação de Modelos (v3)
+
+Cinco modelos foram treinados e comparados na mesma base de teste (`test_size=0.20`, `random_state=42`, `stratify=y`).
+
+| Modelo | ROC-AUC | Recall | Precision | F1 | Tempo (s) |
+|---|---|---|---|---|---|
+| **LightGBM** | **0,7778** | **65,82%** | **18,90%** | **29,37%** | **7,2** |
+| XGBoost | 0,7763 | 66,24% | 18,66% | 29,12% | 9,2 |
+| Random Forest | 0,7470 | 50,01% | 20,01% | 28,58% | 36,6 |
+| Regressão Logística | 0,6694 | 63,32% | 12,62% | 21,04% | 2.278 |
+| Dummy | 0,5000 | 0,00% | 0,00% | 0,00% | 0,01 |
+
+O LightGBM foi selecionado para produção por apresentar o maior ROC-AUC (0,7778) com tempo de treino competitivo (7,2 s). Usa crescimento folha-a-folha (`num_leaves=63`) com GOSS e EFB. O parâmetro `class_weight="balanced"` (LightGBM, RF, LR) e `scale_pos_weight` (XGBoost) compensam o desbalanceamento de classes.
 
 ---
 
 ## Modelo em Produção
 
-**LightGBM Balanced v2** — `Model/artifacts/lgbm_balanced_model.joblib`
+**LightGBM v3** — `Model/artifacts/best_model.joblib`
 
-| Métrica | LightGBM Balanced (v2) | XGBoost Balanced (v1) |
+| Métrica | Valor |
+|---|---|
+| ROC-AUC | 0,7778 |
+| Recall | 65,82% |
+| Precision | 18,90% |
+| F1 | 29,37% |
+| Average Precision | 27,68% |
+| Features brutas | 185 |
+| Features após encoding (ColumnTransformer) | 309 |
+| Linhas de treino | 246.008 |
+| Linhas de teste | 61.503 |
+
+---
+
+## Pré-processamento (ColumnTransformer v3)
+
+O ColumnTransformer é ajustado **exclusivamente no X_train** para evitar data leakage.
+
+| Tipo | Colunas | Transformação |
 |---|---|---|
-| ROC-AUC | **0,7524** | 0,7509 |
-| Recall  | **0,6606** | 0,6568 |
-| Gini    | **0,5049** | 0,5019 |
-| KS      | **0,3736** | 0,3694 |
-| Tempo de treino | **2,89 s** | 4,00 s |
+| Numéricas | 169 | `SimpleImputer(strategy="median")` |
+| Categóricas | 16 | `SimpleImputer(strategy="most_frequent")` + `OneHotEncoder(handle_unknown="ignore")` |
+| **Total encoded** | **309** | 169 numéricas + 140 dummies |
 
-O LightGBM supera o XGBoost em 6 de 7 métricas e é 28% mais rápido. Usa crescimento folha-a-folha (`num_leaves=63`) com GOSS e EFB, convergindo mais eficientemente que o crescimento nível-a-nível do XGBoost.
+Artefato: `Model/artifacts/preprocessor.joblib`
 
 ---
 
@@ -57,10 +89,16 @@ O LightGBM supera o XGBoost em 6 de 7 métricas e é 28% mais rápido. Usa cresc
 
 ```
 Model/artifacts/
-├── lgbm_balanced_model.joblib   ← modelo LightGBM serializado (produção)
-├── features.joblib              ← lista das 119 features na ordem exata esperada pelo modelo
-└── medianas.joblib              ← medianas para imputação de nulos em produção
+├── best_model.joblib          ← LightGBM v3 em produção (ROC-AUC 0,7778)
+├── preprocessor.joblib        ← ColumnTransformer v3 (fitted no X_train)
+├── features.joblib            ← lista das 185 features brutas na ordem exata
+├── all_models.joblib          ← 5 modelos treinados (Dummy, LR, RF, XGB, LGBM)
+├── predictions_test.joblib    ← probabilidades e predições no conjunto de teste
+├── comparacao_modelos.csv     ← tabela comparativa de métricas dos 5 modelos
+└── metadata_modelo.json       ← métricas de produção (lidas pelo app dinamicamente)
 ```
+
+**Não remover nem substituir** `best_model.joblib`, `preprocessor.joblib` e `features.joblib` — são os artefatos v3 validados em produção. A ordem das colunas em `features.joblib` é contrato com o ColumnTransformer.
 
 ---
 
@@ -72,7 +110,7 @@ Model/artifacts/
 2. Dependências instaladas:
 
 ```bash
-pip install -r Model/requirements.txt
+pip install -r requirements.txt
 ```
 
 ### Executar treinamento
@@ -85,16 +123,10 @@ python Model/train.py
 
 Saída esperada:
 ```
-Treino: (246008, 119) | Teste: (61503, 119)
-Modelo salvo:    Model/artifacts/lgbm_balanced_model.joblib
-Features salvas: Model/artifacts/features.joblib  (119 colunas)
-
-Métricas — LightGBM Balanced:
-  accuracy    : 0.7046
-  precision   : 0.1660
-  recall      : 0.6606
-  f1          : 0.2653
-  roc_auc     : 0.7524
+Treino: (246008, 309) | Teste: (61503, 309)
+[LightGBM] → ROC-AUC: 0.7778  Recall: 0.6582  Precision: 0.1890  F1: 0.2937  Tempo: 7.2s
+Melhor modelo: LightGBM
+Artefatos salvos em Model/artifacts/
 ```
 
 ### Opções avançadas
@@ -116,7 +148,7 @@ python Model/train.py --minio --db
 jupyter lab Model/evaluation.ipynb
 ```
 
-O notebook recria o split de teste deterministicamente (`random_state=42`) e calcula métricas, curva ROC, matriz de confusão e importância de features por gain.
+O notebook carrega os artefatos existentes (`all_models.joblib`, `predictions_test.joblib`), recria o split de teste deterministicamente (`random_state=42`) e calcula métricas, curvas ROC, matrizes de confusão e importância de features — **sem retreinar**.
 
 ---
 
@@ -130,16 +162,30 @@ sys.path.append(".")  # executar da raiz do projeto
 from Model.predict import predict
 
 resultado = predict({
-    "AMT_INCOME_TOTAL": 150000.0,
-    "AMT_CREDIT": 300000.0,
-    "AMT_ANNUITY": 25000.0,
-    "CNT_CHILDREN": 0,
-    "DAYS_BIRTH": -(35 * 365),
-    "EXT_SOURCE_1": 0.50,
-    "EXT_SOURCE_2": 0.50,
-    "EXT_SOURCE_3": 0.50,
+    "AMT_INCOME_TOTAL": 360000.0,
+    "AMT_CREDIT":       80000.0,
+    "AMT_GOODS_PRICE":  80000.0,
+    "CNT_CHILDREN":     0,
+    "DAYS_BIRTH":       -(48 * 365),
+    "DAYS_EMPLOYED":    -(15 * 365),
+    "EXT_SOURCE_1":     0.88,
+    "EXT_SOURCE_2":     0.92,
+    "EXT_SOURCE_3":     0.90,
 })
-# {"prediction": 0|1, "probability": float}
+# {"prediction": 0, "probability": ~0.07}  → BAIXO RISCO
 ```
 
-O serviço inicializa todas as 119 features com zero e preenche apenas as colunas fornecidas. Tenta carregar o artefato do MinIO primeiro; na ausência, usa fallback local de `Model/artifacts/`.
+O serviço:
+1. Chama `_enrich_input()` para calcular as features derivadas (mesma lógica de `create_application_features()` em `data_sanitization.py`)
+2. Inicializa DataFrame com todas as **185 features brutas** como `None`
+3. Preenche os campos fornecidos — ausentes chegam como `None` ao ColumnTransformer e são imputados com mediana do treino
+4. Aplica `preprocessor.transform()` → 309 features encoded
+5. Retorna `best_model.predict_proba()` como `{"prediction": 0|1, "probability": float}`
+
+**Cenários validados em produção:**
+
+| Cenário | Probabilidade | Classificação |
+|---|---|---|
+| Renda 360k · Crédito 80k · Idade 48 · Emprego 15a · Scores 0,88/0,92/0,90 | ~7% | 🟢 BAIXO RISCO |
+| Renda 72k · Crédito 180k · Idade 30 · Emprego 2a · Scores 0,45/0,48/0,52 | ~53% | 🟡 MÉDIO RISCO |
+| Renda 28,8k · Crédito 450k · Idade 23 · Emprego 0a · Scores 0,05/0,08/0,06 | ~89% | 🔴 ALTO RISCO |

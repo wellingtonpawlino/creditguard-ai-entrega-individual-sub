@@ -585,7 +585,7 @@ if analisar:
     }
 
     resultado = predict(inputs)
-    log_prediction(inputs, resultado, model_version=os.environ.get("MODEL_VERSION", "v2"))
+    log_prediction(inputs, resultado, model_version=os.environ.get("MODEL_VERSION", "v3"))
 
     probabilidade = resultado["probability"] * 100
     classe        = resultado["prediction"]

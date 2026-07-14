@@ -11,7 +11,7 @@ def get_connection():
     )
 
 
-def log_prediction(inputs: dict, result: dict, model_version: str = "v2") -> None:
+def log_prediction(inputs: dict, result: dict, model_version: str = "v3") -> None:
     try:
         conn = get_connection()
         cur = conn.cursor()

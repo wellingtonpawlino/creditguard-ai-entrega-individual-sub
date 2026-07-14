@@ -1,9 +1,151 @@
+# ============================================================
+# DataPipeline/config.yaml
+# Configuração fiel ao notebook oficial:
+#   docs/HomeCredit_Comparacao_Completa_Modelos_Explicado.ipynb
+# Seções cobertas: Parte A (5–11) · Parte B (12–16)
+# ============================================================
+
+
+# =============================================================
+# FONTES DE DADOS  (Parte A — seções 5 e 8)
+# =============================================================
+# application_train.csv : 307.511 linhas × 122 colunas — 1 linha por solicitação
+# bureau.csv            : 1.716.428 linhas × 17 colunas — N linhas por cliente
+#                         305.811 clientes únicos com histórico bureau
+#                         1.700 clientes sem histórico (NaN nas features BUREAU_*)
+
 paths:
   raw_data:    Dados/raw/application_train.csv
   bureau_data: Dados/raw/bureau.csv
-  clean_data:  Dados/clean_data.csv
-  abt:         Dados/abt.csv
+  clean_data:  Dados/clean_data.csv   # saída de data_sanitization.py (185 features + TARGET, sem encoding)
+  abt:         Dados/abt.csv          # saída de abt_transform.py (pass-through de clean_data.csv)
 
+
+# =============================================================
+# PARÂMETROS DO EXPERIMENTO  (Parte A — seção 4)
+# =============================================================
+experiment:
+  quick_run:          false   # true → usa amostra de quick_sample_size linhas para validação rápida
+  quick_sample_size:  80000
+  random_state:       42
+  test_size:          0.20    # 80/20 → 246.008 treino / 61.503 teste
+
+
+# =============================================================
+# FEATURE ENGINEERING — APPLICATION TRAIN  (Parte A — seção 7)
+# =============================================================
+# Implementado em data_sanitization.py → create_application_features()
+# Divisões protegidas por safe_divide() — denominador 0 vira NaN
+# Inf / -Inf substituídos por NaN ao final da função
+
+application_features:
+  derived:
+    CREDIT_INCOME_RATIO:   "AMT_CREDIT / AMT_INCOME_TOTAL"
+    ANNUITY_INCOME_RATIO:  "AMT_ANNUITY / AMT_INCOME_TOTAL"
+    CREDIT_ANNUITY_RATIO:  "AMT_CREDIT / AMT_ANNUITY"
+    CREDIT_GOODS_RATIO:    "AMT_CREDIT / AMT_GOODS_PRICE"
+    DOWN_PAYMENT_VALUE:    "AMT_GOODS_PRICE - AMT_CREDIT"
+    AGE_YEARS:             "-DAYS_BIRTH / 365.25"
+    EMPLOYED_YEARS:        "-DAYS_EMPLOYED / 365.25  (365243 substituído por NaN antes do cálculo)"
+    EMPLOYED_AGE_RATIO:    "EMPLOYED_YEARS / AGE_YEARS"
+
+  special_values:
+    DAYS_EMPLOYED_sentinel: 365243
+    # Código especial presente em ~18% da base (aposentados / sem vínculo empregatício)
+    # Taxa de inadimplência nesse grupo: 5,4% vs 8,66% nos demais clientes
+    # Decisão: substituído por NaN em EMPLOYED_YEARS — NÃO imputado com mediana
+
+
+# =============================================================
+# FEATURE ENGINEERING — BUREAU  (Parte A — seção 9)
+# =============================================================
+# Implementado em data_sanitization.py → create_bureau_features()
+# Calculado no nível de crédito individual (antes da agregação por cliente)
+
+bureau_features:
+  derived:
+    DEBT_CREDIT_RATIO:    "AMT_CREDIT_SUM_DEBT / AMT_CREDIT_SUM"
+    OVERDUE_CREDIT_RATIO: "AMT_CREDIT_SUM_OVERDUE / AMT_CREDIT_SUM"
+    IS_ACTIVE:            "int(CREDIT_ACTIVE == 'Active')"
+    IS_CLOSED:            "int(CREDIT_ACTIVE == 'Closed')"
+    IS_BAD_DEBT:          "int(CREDIT_ACTIVE == 'Bad debt')"
+
+
+# =============================================================
+# AGREGAÇÃO BUREAU  (Parte A — seções 10 e 11)
+# =============================================================
+# Implementado em data_sanitization.py → aggregate_bureau()
+# Saída: 44 features numéricas com prefixo BUREAU_
+#      + contagens por status (BUREAU_STATUS_*_COUNT)
+#      + contagens pelos top-N tipos de crédito (BUREAU_TYPE_*_COUNT)
+# bureau_customer: 305.811 linhas — depois left join → 307.511 linhas
+
+bureau_aggregation:
+  top_n_credit_types: 10
+
+  numeric_columns:
+    SK_ID_BUREAU:            [count]
+    DAYS_CREDIT:             [min, max, mean]
+    CREDIT_DAY_OVERDUE:      [max, mean]
+    DAYS_CREDIT_ENDDATE:     [min, max, mean]
+    DAYS_ENDDATE_FACT:       [min, max, mean]
+    AMT_CREDIT_MAX_OVERDUE:  [max, mean]
+    CNT_CREDIT_PROLONG:      [sum, mean]
+    AMT_CREDIT_SUM:          [sum, mean, max]
+    AMT_CREDIT_SUM_DEBT:     [sum, mean, max]
+    AMT_CREDIT_SUM_LIMIT:    [sum, mean]
+    AMT_CREDIT_SUM_OVERDUE:  [sum, mean, max]
+    DAYS_CREDIT_UPDATE:      [min, max, mean]
+    AMT_ANNUITY:             [sum, mean, max]
+    DEBT_CREDIT_RATIO:       [mean, max]
+    OVERDUE_CREDIT_RATIO:    [mean, max]
+    IS_ACTIVE:               [sum, mean]
+    IS_CLOSED:               [sum, mean]
+    IS_BAD_DEBT:             [sum, mean]
+
+
+# =============================================================
+# CONSTRUÇÃO DA ABT  (Parte B — seções 12 e 13)
+# =============================================================
+abt:
+  join:
+    type:     left         # Preserva todos os 307.511 clientes da base principal
+    key:      SK_ID_CURR
+    validate: one_to_one   # Garante que o merge não multiplicou linhas
+  shape:
+    n_rows:     307511
+    n_features: 185        # Colunas preditoras antes do encoding
+    n_target:   1          # TARGET  —  0 = adimplente · 1 = inadimplente
+  target_distribution:
+    adimplente:      0.9193   # 282.686 registros
+    inadimplente:    0.0807   #  24.825 registros
+    imbalance_ratio: 11.4     # Justifica class_weight="balanced" e scale_pos_weight ≈ 11,39
+
+
+# =============================================================
+# PRÉ-PROCESSAMENTO  (Parte B — seções 15 e 16)
+# =============================================================
+# ColumnTransformer ajustado APENAS no X_train — evita data leakage
+# Implementado em Model/train.py; documentado aqui para rastreabilidade do pipeline
+
+preprocessing:
+  numeric:
+    n_columns:        169
+    imputer_strategy: median
+  categorical:
+    n_columns:        16
+    imputer_strategy: most_frequent
+    encoder:          OneHotEncoder
+    handle_unknown:   ignore
+    sparse_output:    true
+  n_features_encoded: 309    # 169 numéricas + 140 dummies geradas pelo OHE
+  train_shape: [246008, 309]
+  test_shape:  [61503,  309]
+
+
+# =============================================================
+# MINIO — Armazenamento distribuído (infraestrutura opcional)
+# =============================================================
 minio:
   buckets:
     raw_data:       raw-data
