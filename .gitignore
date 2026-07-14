@@ -22,3 +22,6 @@ __pycache__/
 # Data
 Dados/raw/*.csv
 Dados/abt_full.csv
+
+# Claude Code
+CLAUDE.md
