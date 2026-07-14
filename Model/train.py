@@ -152,6 +152,7 @@ def save_artifacts(
             "precision_classe_1": float(best_row["Precision_Classe_1"]),
             "recall_classe_1": float(best_row["Recall_Classe_1"]),
             "f1_classe_1": float(best_row["F1_Classe_1"]),
+            "n_features_encoded": len(preprocessor.get_feature_names_out()),
             "random_state": cfg["split"]["random_state"],
             "linhas_treino": len(X_train),
             "linhas_teste": len(X_test),

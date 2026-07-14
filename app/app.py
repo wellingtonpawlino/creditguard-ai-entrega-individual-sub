@@ -1,7 +1,9 @@
 import faulthandler
+import json
 import sys
 import os
 from datetime import datetime
+from pathlib import Path
 
 faulthandler.enable(file=sys.stderr, all_threads=True)
 
@@ -15,7 +17,7 @@ import streamlit as st
 sys.stderr.write("[APP] importando predict\n")
 sys.stderr.flush()
 sys.path.append("/app")
-from Model.predict import predict, load_model, load_features
+from Model.predict import predict, load_model, load_features, load_preprocessor
 
 sys.stderr.write("[APP] importando log_prediction\n")
 sys.stderr.flush()
@@ -25,9 +27,25 @@ sys.stderr.write("[APP] imports concluidos\n")
 sys.stderr.flush()
 
 
+_METADATA_PATH = Path(__file__).resolve().parent.parent / "Model" / "artifacts" / "metadata_modelo.json"
+
+
+def _load_metadata() -> dict:
+    try:
+        with open(_METADATA_PATH, "r", encoding="utf-8") as _f:
+            return json.load(_f)
+    except FileNotFoundError:
+        sys.stderr.write(f"[APP] metadata_modelo.json nao encontrado em {_METADATA_PATH}\n")
+        sys.stderr.flush()
+        return {}
+
+
 @st.cache_resource
 def _warm_up():
-    sys.stderr.write("[APP] cache_resource: carregando modelo...\n")
+    sys.stderr.write("[APP] cache_resource: carregando preprocessor...\n")
+    sys.stderr.flush()
+    load_preprocessor()
+    sys.stderr.write("[APP] cache_resource: preprocessor ok\n")
     sys.stderr.flush()
     m = load_model()
     sys.stderr.write(f"[APP] cache_resource: modelo ok — {type(m)}\n")
@@ -35,10 +53,13 @@ def _warm_up():
     f = load_features()
     sys.stderr.write(f"[APP] cache_resource: {len(f)} features ok\n")
     sys.stderr.flush()
-    return m, f
+    meta = _load_metadata()
+    sys.stderr.write(f"[APP] cache_resource: metadata ok — {list(meta.keys())}\n")
+    sys.stderr.flush()
+    return m, f, meta
 
 
-_model_obj, _features_list = _warm_up()
+_model_obj, _features_list, _metadata = _warm_up()
 
 sys.stderr.write("[APP] modelo pre-carregado\n")
 sys.stderr.flush()
@@ -302,8 +323,13 @@ div[data-testid="column"] {
 
 
 # ── SIDEBAR ───────────────────────────────────────────────────────────────────
-model_version = os.environ.get("MODEL_VERSION", "v2")
-n_features    = len(_features_list)
+model_version  = os.environ.get("MODEL_VERSION", "v3")
+_algo_name     = _metadata.get("melhor_modelo", "—")
+_n_features    = _metadata.get("n_features_encoded", len(_features_list))
+_roc_str       = f"{_metadata['roc_auc']:.4f}".replace(".", ",") if "roc_auc" in _metadata else "—"
+_recall_str    = f"{_metadata['recall_classe_1']:.2%}".replace(".", ",") if "recall_classe_1" in _metadata else "—"
+_precision_str = f"{_metadata['precision_classe_1']:.2%}".replace(".", ",") if "precision_classe_1" in _metadata else "—"
+_f1_str        = f"{_metadata['f1_classe_1']:.2%}".replace(".", ",") if "f1_classe_1" in _metadata else "—"
 
 with st.sidebar:
     st.markdown("### 🛡️ CreditGuard AI")
@@ -319,12 +345,13 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("**Modelo em Produção**")
     for label, value in [
-        ("Algoritmo",           "LightGBM Balanced"),
-        ("Versão",              model_version),
-        ("Features",            f"{n_features} variáveis"),
-        ("ROC-AUC",             "0,7524"),
-        ("Recall",              "66,06%"),
-        ("Cobertura preditiva", "84,9% do gain"),
+        ("Algoritmo",  _algo_name),
+        ("Versão",     model_version),
+        ("Features",   f"{_n_features} features"),
+        ("ROC-AUC",    _roc_str),
+        ("Recall",     _recall_str),
+        ("Precision",  _precision_str),
+        ("F1",         _f1_str),
     ]:
         st.markdown(
             f'<div class="sidebar-card">'
@@ -353,11 +380,11 @@ São os **3 maiores preditores** do modelo, respondendo por ~60% do poder predit
 
 
 # ── HEADER ────────────────────────────────────────────────────────────────────
-st.markdown("""
+st.markdown(f"""
 <div class="header-container">
     <div class="header-title">🛡️ CreditGuard AI</div>
     <div class="header-sub">Análise Inteligente de Risco de Crédito — ProScore Analytics</div>
-    <span class="header-badge">LightGBM Balanced · 119 features · 84,9% cobertura preditiva</span>
+    <span class="header-badge">{_algo_name} · {_n_features} features · ROC-AUC {_roc_str}</span>
 </div>
 """, unsafe_allow_html=True)
 
@@ -599,8 +626,8 @@ if analisar:
 # ── RODAPÉ ────────────────────────────────────────────────────────────────────
 st.markdown(f"""
 <div class="footer-bar">
-  <span>🤖 Modelo: <strong>LightGBM Balanced</strong></span>
-  <span>📊 Features: <strong>{n_features}</strong></span>
+  <span>🤖 Modelo: <strong>{_algo_name}</strong></span>
+  <span>📊 Features: <strong>{_n_features}</strong></span>
   <span>🏷️ Versão: <strong>{model_version}</strong></span>
   <span>⚡ ProScore Analytics — CreditGuard AI</span>
 </div>
