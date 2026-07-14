@@ -258,7 +258,7 @@ docker exec -it creditguard-postgres psql -U creditguard -d creditguard \
 
 | Variável | Padrão | Descrição |
 |---|---|---|
-| `MODEL_VERSION` | `v2` | Versão do modelo buscada no MinIO |
+| `MODEL_VERSION` | `v3` | Versão do modelo buscada no MinIO |
 | `MINIO_ENDPOINT` | `minio:9000` | Endereço do MinIO (interno ao Docker) |
 | `POSTGRES_HOST` | `postgres` | Host do banco de dados |
 | `OMP_NUM_THREADS` | `1` | Limita threads OpenMP — garante estabilidade do LightGBM em container |

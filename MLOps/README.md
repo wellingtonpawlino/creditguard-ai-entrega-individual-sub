@@ -73,12 +73,13 @@ Armazenamento de objetos compatível com S3, usado para versionar artefatos do m
 | `processed-data` | ABT gerada pelo DataPipeline |
 | `model-artifacts` | Modelo serializado e lista de features |
 
-**Artefatos versionados por `MODEL_VERSION` (padrão: `v2`):**
+**Artefatos versionados por `MODEL_VERSION` (padrão: `v3`):**
 
 ```
 model-artifacts/
-└── v2/
-    ├── lgbm_balanced_model.joblib
+└── v3/
+    ├── best_model.joblib
+    ├── preprocessor.joblib
     └── features.joblib
 ```
 
@@ -173,13 +174,14 @@ docker-compose up --build
 
 | Métrica | Valor |
 |---|---|
-| Algoritmo | LightGBM com `scale_pos_weight` |
-| ROC-AUC | 0,7524 |
-| Recall | 0,6606 |
-| Gini | 0,5049 |
-| KS | 0,3736 |
-| Features | 119 (pós-encoding) |
-| Versão ativa | v2 |
+| Algoritmo | LightGBM com `class_weight="balanced"` |
+| ROC-AUC | 0,7778 |
+| Recall | 65,82% |
+| Precision | 18,90% |
+| F1 | 29,37% |
+| Features brutas | 185 |
+| Features pós-encoding | 309 |
+| Versão ativa | v3 |
 
 O Recall é a métrica prioritária: o custo de aprovar um inadimplente supera o custo de negar um bom pagador.
 
