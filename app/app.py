@@ -389,6 +389,12 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 
+# ── CONTADOR DE LIMPEZA (key trick) ──────────────────────────────────────────
+# Incrementar _clear_n muda o key de todos os widgets, forçando recriação com value=None
+_clear_n  = st.session_state.get("_clear_count", 0)
+_cleared  = _clear_n > 0   # True após o primeiro "Limpar"
+
+
 # ── LAYOUT PRINCIPAL ──────────────────────────────────────────────────────────
 col_form, col_panel = st.columns([3, 2], gap="large")
 
@@ -401,16 +407,18 @@ with col_form:
     with ff1:
         amt_income = st.number_input(
             "Renda Anual do Cliente (R$)",
-            min_value=0.0, value=150000.0, step=1000.0, format="%.2f",
+            min_value=0.0, value=None if _cleared else 150000.0, step=1000.0, format="%.2f",
+            placeholder="Digite a renda anual",
             help="Renda anual bruta declarada (AMT_INCOME_TOTAL).",
-            key="amt_income",
+            key=f"amt_income_{_clear_n}",
         )
     with ff2:
         amt_credit = st.number_input(
             "Valor do Crédito Solicitado (R$)",
-            min_value=0.0, value=300000.0, step=1000.0, format="%.2f",
+            min_value=0.0, value=None if _cleared else 300000.0, step=1000.0, format="%.2f",
+            placeholder="Digite o valor do crédito",
             help="Valor total do crédito solicitado (AMT_CREDIT).",
-            key="amt_credit",
+            key=f"amt_credit_{_clear_n}",
         )
 
     # — Perfil do Cliente ──────────────────────────────────────────────────────
@@ -419,21 +427,27 @@ with col_form:
     pf1, pf2, pf3 = st.columns(3)
     with pf1:
         idade = st.number_input(
-            "Idade do Cliente", min_value=18, max_value=100, value=35,
+            "Idade do Cliente", min_value=18, max_value=100,
+            value=None if _cleared else 35,
+            placeholder="Ex: 35",
             help="Idade em anos inteiros. Convertida internamente para DAYS_BIRTH = -(idade × 365).",
-            key="idade",
+            key=f"idade_{_clear_n}",
         )
     with pf2:
         tempo_emprego = st.number_input(
-            "Tempo no Emprego Atual", min_value=0, max_value=60, value=5,
+            "Tempo no Emprego Atual", min_value=0, max_value=60,
+            value=None if _cleared else 5,
+            placeholder="Anos",
             help="Anos no emprego atual. Convertido internamente para DAYS_EMPLOYED = -(anos × 365).",
-            key="tempo_emprego",
+            key=f"tempo_emprego_{_clear_n}",
         )
     with pf3:
         cnt_children = st.number_input(
-            "Número de Filhos", min_value=0, value=0,
+            "Número de Filhos", min_value=0,
+            value=None if _cleared else 0,
+            placeholder="0",
             help="Filhos dependentes (CNT_CHILDREN).",
-            key="cnt_children",
+            key=f"cnt_children_{_clear_n}",
         )
 
     # — Scores de Crédito ──────────────────────────────────────────────────────
@@ -442,30 +456,41 @@ with col_form:
     sc1, sc2, sc3 = st.columns(3)
     with sc1:
         ext_source_1 = st.number_input(
-            "Score Bureau 1", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
+            "Score Bureau 1", min_value=0.0, max_value=1.0,
+            value=None if _cleared else 0.50, step=0.01, format="%.2f",
+            placeholder="0,00 – 1,00",
             help="EXT_SOURCE_1 — 3º maior preditor do modelo. 0,00 = risco máximo · 1,00 = risco mínimo.",
-            key="ext_source_1",
+            key=f"ext_source_1_{_clear_n}",
         )
     with sc2:
         ext_source_2 = st.number_input(
-            "Score Bureau 2", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
+            "Score Bureau 2", min_value=0.0, max_value=1.0,
+            value=None if _cleared else 0.50, step=0.01, format="%.2f",
+            placeholder="0,00 – 1,00",
             help="EXT_SOURCE_2 — 2º maior preditor (gain 157.687). 0,00 = risco máximo · 1,00 = risco mínimo.",
-            key="ext_source_2",
+            key=f"ext_source_2_{_clear_n}",
         )
     with sc3:
         ext_source_3 = st.number_input(
-            "Score Bureau 3", min_value=0.0, max_value=1.0, value=0.50, step=0.01, format="%.2f",
+            "Score Bureau 3", min_value=0.0, max_value=1.0,
+            value=None if _cleared else 0.50, step=0.01, format="%.2f",
+            placeholder="0,00 – 1,00",
             help="EXT_SOURCE_3 — Maior preditor do modelo (gain 191.174). 0,00 = risco máximo · 1,00 = risco mínimo.",
-            key="ext_source_3",
+            key=f"ext_source_3_{_clear_n}",
         )
     st.caption("Faixa válida: 0,00 a 1,00  ·  0,00 = risco máximo  ·  0,50 = neutro  ·  1,00 = risco mínimo")
 
 
 with col_panel:
 
+    # Aliases seguros para campos que podem estar None (após "Limpar")
+    _income  = amt_income    if amt_income    is not None else 0.0
+    _credit  = amt_credit    if amt_credit    is not None else 0.0
+    _emprego = tempo_emprego if tempo_emprego is not None else 0
+
     # Métricas derivadas
-    renda_mensal   = amt_income / 12 if amt_income > 0 else 1.0
-    credito_renda  = (amt_credit / amt_income * 100) if amt_income > 0 else 0.0
+    renda_mensal   = _income / 12 if _income > 0 else 0.0
+    credito_renda  = (_credit / _income * 100) if _income > 0 else 0.0
 
     # — Resumo da Operação ─────────────────────────────────────────────────────
     st.markdown('<p class="section-title">📋 Resumo da Operação</p>', unsafe_allow_html=True)
@@ -473,11 +498,11 @@ with col_panel:
 <div class="op-grid">
   <div class="op-item">
     <div class="op-label">Crédito Solicitado</div>
-    <div class="op-value">{_fmt(amt_credit)}</div>
+    <div class="op-value">{_fmt(_credit)}</div>
   </div>
   <div class="op-item">
     <div class="op-label">Renda Anual</div>
-    <div class="op-value">{_fmt(amt_income)}</div>
+    <div class="op-value">{_fmt(_income)}</div>
   </div>
   <div class="op-item">
     <div class="op-label">Renda Mensal (est.)</div>
@@ -494,12 +519,12 @@ with col_panel:
     st.markdown('<p class="section-title">📈 Indicadores</p>', unsafe_allow_html=True)
 
     cr_st  = "ok" if credito_renda <= 300 else ("warn" if credito_renda <= 500 else "critico")
-    emp_st = "ok" if tempo_emprego >= 2 else ("warn" if tempo_emprego >= 1 else "critico")
+    emp_st = "ok" if _emprego >= 2 else ("warn" if _emprego >= 1 else "critico")
 
     st.markdown(f"""
 <div class="kpi-grid">
   {_kpi("Crédito / Renda", f"{credito_renda:.0f}%", "Ideal: &lt; 300%", cr_st)}
-  {_kpi("Tempo de Emprego", f"{tempo_emprego} ano{'s' if tempo_emprego != 1 else ''}", "Ideal: &gt; 2 anos", emp_st)}
+  {_kpi("Tempo de Emprego", f"{_emprego} ano{'s' if _emprego != 1 else ''}", "Ideal: &gt; 2 anos", emp_st)}
 </div>
 """, unsafe_allow_html=True)
 
@@ -508,9 +533,9 @@ with col_panel:
 
     alertas = []
 
-    if amt_credit > amt_income:
+    if _credit > _income:
         alertas.append(_alerta("atencao", "Crédito superior à renda anual informada."))
-    if tempo_emprego < 1:
+    if _emprego < 1:
         alertas.append(_alerta("info", "Cliente com menos de 1 ano de emprego atual."))
     if credito_renda > 500:
         alertas.append(_alerta("critico", f"Crédito representa {credito_renda:.0f}% da renda anual — comprometimento muito elevado."))
@@ -525,129 +550,117 @@ with col_panel:
 # ── BOTÕES ────────────────────────────────────────────────────────────────────
 st.markdown("---")
 
-_DEFAULTS = {
-    "amt_income":    150000.0,
-    "amt_credit":    300000.0,
-    "idade":         35,
-    "tempo_emprego": 5,
-    "cnt_children":  0,
-    "ext_source_1":  0.50,
-    "ext_source_2":  0.50,
-    "ext_source_3":  0.50,
-}
-
 btn_col1, btn_col2 = st.columns([3, 1])
 with btn_col1:
     analisar = st.button("🔍 Analisar Cliente", type="primary", use_container_width=True)
 with btn_col2:
     if st.button("🗑️ Limpar", use_container_width=True):
-        for _k, _v in _DEFAULTS.items():
-            st.session_state[_k] = _v
+        st.session_state["_clear_count"] = _clear_n + 1
+        st.session_state["_resultado"]   = None
         st.rerun()
 
 if analisar:
-
     sys.stderr.write("[APP] botao clicado — iniciando analise\n")
     sys.stderr.flush()
 
+    _i_income  = amt_income    if amt_income    is not None else 0.0
+    _i_credit  = amt_credit    if amt_credit    is not None else 0.0
+    _i_idade   = idade         if idade         is not None else 0
+    _i_emprego = tempo_emprego if tempo_emprego is not None else 0
+    _i_filhos  = cnt_children  if cnt_children  is not None else 0
+    _i_es1     = ext_source_1  if ext_source_1  is not None else 0.0
+    _i_es2     = ext_source_2  if ext_source_2  is not None else 0.0
+    _i_es3     = ext_source_3  if ext_source_3  is not None else 0.0
+
     inputs = {
-        "AMT_INCOME_TOTAL": amt_income,
-        "AMT_CREDIT":       amt_credit,
-        "AMT_GOODS_PRICE":  amt_credit,
-        "CNT_CHILDREN":     cnt_children,
-        "DAYS_BIRTH":       -(idade * 365),
-        "DAYS_EMPLOYED":    -(tempo_emprego * 365),
-        "EXT_SOURCE_1":     ext_source_1,
-        "EXT_SOURCE_2":     ext_source_2,
-        "EXT_SOURCE_3":     ext_source_3,
+        "AMT_INCOME_TOTAL": _i_income,
+        "AMT_CREDIT":       _i_credit,
+        "AMT_GOODS_PRICE":  _i_credit,
+        "CNT_CHILDREN":     _i_filhos,
+        "DAYS_BIRTH":       -(_i_idade   * 365),
+        "DAYS_EMPLOYED":    -(_i_emprego * 365),
+        "EXT_SOURCE_1":     _i_es1,
+        "EXT_SOURCE_2":     _i_es2,
+        "EXT_SOURCE_3":     _i_es3,
     }
 
-    sys.stderr.write(f"[APP] inputs: {inputs}\n")
-    sys.stderr.flush()
-    sys.stderr.write("[APP] chamando predict(inputs)\n")
-    sys.stderr.flush()
-
     resultado = predict(inputs)
-
-    sys.stderr.write(f"[APP] predict() retornou: {resultado}\n")
-    sys.stderr.flush()
-
     log_prediction(inputs, resultado, model_version=os.environ.get("MODEL_VERSION", "v2"))
-
-    sys.stderr.write("[APP] log_prediction() concluido\n")
-    sys.stderr.flush()
 
     probabilidade = resultado["probability"] * 100
     classe        = resultado["prediction"]
 
     if probabilidade < 30:
-        nivel       = "BAIXO RISCO"
-        card_cls    = "result-card-low"
-        emoji       = "✅"
-        acao        = "Aprovação automática recomendada."
-        prob_color  = "#DCFCE7"   # verde claro sobre fundo verde escuro
-        bar_color   = "#4ADE80"   # verde médio — visível sobre track translúcido
-        risk_color  = "#16A34A"   # borda superior dos KPI cards laterais
+        nivel, card_cls, emoji, acao = "BAIXO RISCO", "result-card-low",  "✅", "Aprovação automática recomendada."
+        prob_color, bar_color, risk_color = "#DCFCE7", "#4ADE80", "#16A34A"
     elif probabilidade < 70:
-        nivel       = "MÉDIO RISCO"
-        card_cls    = "result-card-mid"
-        emoji       = "⚠️"
-        acao        = "Análise complementar recomendada."
-        prob_color  = "#FEF9C3"   # amarelo muito claro — legível sobre amarelo escuro
-        bar_color   = "#FCD34D"   # amarelo médio
-        risk_color  = "#FBBF24"   # borda superior dos KPI cards laterais
+        nivel, card_cls, emoji, acao = "MÉDIO RISCO", "result-card-mid",  "⚠️", "Análise complementar recomendada."
+        prob_color, bar_color, risk_color = "#FEF9C3", "#FCD34D", "#FBBF24"
     else:
-        nivel       = "ALTO RISCO"
-        card_cls    = "result-card-high"
-        emoji       = "⛔"
-        acao        = "Revisão manual obrigatória."
-        prob_color  = "#FECACA"   # vermelho claro sobre fundo vermelho escuro
-        bar_color   = "#F87171"   # vermelho médio
-        risk_color  = "#DC2626"   # borda superior dos KPI cards laterais
+        nivel, card_cls, emoji, acao = "ALTO RISCO",  "result-card-high", "⛔", "Revisão manual obrigatória."
+        prob_color, bar_color, risk_color = "#FECACA", "#F87171", "#DC2626"
 
-    bar_pct = min(int(probabilidade), 100)
+    st.session_state["_resultado"] = {
+        "resultado":   resultado,
+        "probabilidade": probabilidade,
+        "classe":      classe,
+        "nivel":       nivel,
+        "card_cls":    card_cls,
+        "emoji":       emoji,
+        "acao":        acao,
+        "prob_color":  prob_color,
+        "bar_color":   bar_color,
+        "risk_color":  risk_color,
+        "bar_pct":     min(int(probabilidade), 100),
+        "amt_credit":  _i_credit,
+        "idade":       _i_idade,
+        "tempo_emprego": _i_emprego,
+    }
 
+    sys.stderr.write(f"[APP] predict() retornou: {resultado}\n")
+    sys.stderr.flush()
+
+
+_res = st.session_state.get("_resultado")
+if _res:
     st.markdown("### Resultado da Análise")
 
     res1, res2 = st.columns([2, 1])
 
     with res1:
         st.markdown(f"""
-<div class="result-card {card_cls}">
-  <p class="result-nivel">{nivel}</p>
-  <p class="result-emoji">{emoji}</p>
-  <p class="result-prob" style="color:{prob_color};">{probabilidade:.0f}%</p>
+<div class="result-card {_res['card_cls']}">
+  <p class="result-nivel">{_res['nivel']}</p>
+  <p class="result-emoji">{_res['emoji']}</p>
+  <p class="result-prob" style="color:{_res['prob_color']};">{_res['probabilidade']:.0f}%</p>
   <p class="result-prob-label">Probabilidade de Inadimplência</p>
   <div class="prob-bar-track">
-    <div class="prob-bar-fill" style="width:{bar_pct}%; background:{bar_color};"></div>
+    <div class="prob-bar-fill" style="width:{_res['bar_pct']}%; background:{_res['bar_color']};"></div>
   </div>
   <hr class="result-divider">
-  <p class="result-acao">📋 <strong>Ação recomendada:</strong> {acao}</p>
+  <p class="result-acao">📋 <strong>Ação recomendada:</strong> {_res['acao']}</p>
 </div>
 """, unsafe_allow_html=True)
 
     with res2:
         st.markdown(f"""
-<div class="kpi-card" style="text-align:center; margin-bottom:0.5rem; border-top:3px solid {risk_color};">
+<div class="kpi-card" style="text-align:center; margin-bottom:0.5rem; border-top:3px solid {_res['risk_color']};">
   <div class="kpi-label">Probabilidade</div>
-  <div class="kpi-value" style="font-size:1.6rem; color:{risk_color};">{probabilidade:.0f}%</div>
+  <div class="kpi-value" style="font-size:1.6rem; color:{_res['risk_color']};">{_res['probabilidade']:.0f}%</div>
 </div>
-<div class="kpi-card" style="text-align:center; border-top:3px solid {risk_color};">
+<div class="kpi-card" style="text-align:center; border-top:3px solid {_res['risk_color']};">
   <div class="kpi-label">Classificação Binária</div>
-  <div class="kpi-value">{"Inadimplente" if classe == 1 else "Adimplente"}</div>
+  <div class="kpi-value">{"Inadimplente" if _res['classe'] == 1 else "Adimplente"}</div>
 </div>
 """, unsafe_allow_html=True)
 
         with st.expander("🔧 Detalhes Técnicos"):
-            st.json(resultado)
+            st.json(_res["resultado"])
             st.json({
-                "AMT_GOODS_PRICE_calculado": amt_credit,
-                "DAYS_BIRTH":                -(idade * 365),
-                "DAYS_EMPLOYED":             -(tempo_emprego * 365),
+                "AMT_GOODS_PRICE_calculado": _res["amt_credit"],
+                "DAYS_BIRTH":                -(_res["idade"] * 365),
+                "DAYS_EMPLOYED":             -(_res["tempo_emprego"] * 365),
             })
-
-    sys.stderr.write("[APP] renderizacao concluida — sem crash\n")
-    sys.stderr.flush()
 
 
 # ── RODAPÉ ────────────────────────────────────────────────────────────────────
