@@ -2,6 +2,7 @@ streamlit
 pandas
 joblib
 lightgbm
+xgboost
 scikit-learn
 numpy
 minio

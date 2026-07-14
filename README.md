@@ -57,22 +57,25 @@ O projeto segue a metodologia CRISP-DM:
 proscore-creditguard-ai/
 ├── Dados/
 │   ├── raw/application_train.csv   ← dataset bruto (baixar do Kaggle)
+│   ├── raw/bureau.csv              ← histórico de bureau (baixar do Kaggle)
 │   ├── clean_data.csv              ← gerado por data_sanitization.py
 │   └── abt.csv                     ← gerado por abt_transform.py
 ├── DataPipeline/
-│   ├── data_sanitization.py        ← limpeza e construção da ABT limpa
-│   ├── abt_transform.py            ← encoding e geração do ABT final
+│   ├── data_sanitization.py        ← feature engineering (application + bureau) e merge
+│   ├── abt_transform.py            ← validação e persistência da ABT
 │   ├── exp_analysis.ipynb          ← análise exploratória
-│   └── config.yaml                 ← paths e parâmetros do pipeline
+│   └── config.yaml                 ← paths das fontes de dados
 ├── Model/
-│   ├── train.py                    ← treinamento do modelo LightGBM
+│   ├── train.py                    ← comparação de 5 modelos + ColumnTransformer
 │   ├── predict.py                  ← serviço de inferência
-│   ├── evaluation.ipynb            ← avaliação de métricas e curvas
+│   ├── evaluation.ipynb            ← avaliação de métricas e curvas (5 modelos)
 │   ├── config.yaml                 ← hiperparâmetros e paths de artefatos
 │   └── artifacts/
-│       ├── lgbm_balanced_model.joblib
-│       ├── features.joblib
-│       └── medianas.joblib
+│       ├── preprocessor.joblib     ← ColumnTransformer ajustado no treino
+│       ├── best_model.joblib       ← melhor modelo por ROC-AUC
+│       ├── features.joblib         ← nomes das features brutas (pré-encoding)
+│       ├── comparacao_modelos.csv  ← tabela comparativa dos 5 modelos
+│       └── metadata_modelo.json    ← métricas e metadados do modelo eleito
 ├── app/
 │   ├── app.py                      ← interface Streamlit
 │   ├── Dockerfile
@@ -93,7 +96,12 @@ Baixe o dataset **Home Credit Default Risk** do Kaggle:
 https://www.kaggle.com/competitions/home-credit-default-risk/data
 ```
 
-Extraia os arquivos em `Dados/raw/`. O pipeline utiliza `application_train.csv`.
+Extraia os arquivos em `Dados/raw/`. O pipeline utiliza **dois** arquivos:
+
+| Arquivo | Descrição |
+|---|---|
+| `application_train.csv` | Dados cadastrais e financeiros dos 307.511 clientes |
+| `bureau.csv` | Histórico de créditos anteriores reportados ao bureau |
 
 ### 1. Instalar dependências
 
@@ -106,31 +114,42 @@ pip install -r requirements.txt
 Os comandos abaixo devem ser executados a partir da raiz do projeto.
 
 ```bash
-# Etapa 1 — sanitização: gera Dados/clean_data.csv e Model/artifacts/medianas.joblib
+# Etapa 1 — feature engineering: gera Dados/clean_data.csv
+#   - Razões financeiras (CREDIT_INCOME_RATIO, ANNUITY_INCOME_RATIO, etc.)
+#   - Variáveis temporais (AGE_YEARS, EMPLOYED_YEARS, EMPLOYED_AGE_RATIO)
+#   - Agregações de bureau por cliente (contagens, somas, médias, razões de dívida)
 python DataPipeline/data_sanitization.py
 
-# Etapa 2 — transformação: gera Dados/abt.csv (307511 linhas × 120 colunas)
+# Etapa 2 — validação: gera Dados/abt.csv (307.511 linhas, ~60 features brutas)
 python DataPipeline/abt_transform.py
 ```
 
 ### 3. Treinar o modelo
 
 ```bash
-# Treina o LightGBM Balanced e salva os artefatos em Model/artifacts/
+# Compara 5 modelos e salva os artefatos do melhor em Model/artifacts/
 python Model/train.py
 ```
 
-Saída gerada: `Model/artifacts/lgbm_balanced_model.joblib` e `Model/artifacts/features.joblib`.
+Artefatos gerados:
+
+| Arquivo | Descrição |
+|---|---|
+| `preprocessor.joblib` | ColumnTransformer (SimpleImputer + OneHotEncoder), ajustado só no treino |
+| `best_model.joblib` | Modelo eleito por ROC-AUC |
+| `features.joblib` | Lista de features brutas esperadas na inferência |
+| `comparacao_modelos.csv` | Tabela comparativa dos 5 modelos |
+| `metadata_modelo.json` | Métricas e metadados do modelo eleito |
 
 Métricas obtidas no treinamento completo (307.511 registros, split 80/20):
 
-| Métrica | LightGBM Balanced (v2) | XGBoost Balanced (v1) |
-|---|---|---|
-| ROC-AUC | **0,7524** | 0,7509 |
-| Recall  | **0,6606** | 0,6568 |
-| Gini    | **0,5049** | 0,5019 |
-| KS      | **0,3736** | 0,3694 |
-| Tempo   | **2,89 s** | 4,00 s |
+| Modelo | ROC-AUC | Recall | Precision | Acurácia |
+|---|---|---|---|---|
+| Dummy | ~0,50 | — | — | ~91,9% |
+| Regressão Logística | ~0,72 | — | — | — |
+| Random Forest | ~0,74 | — | — | — |
+| XGBoost | ~0,76 | — | — | — |
+| **LightGBM** | **0,7778** | **65,82%** | **18,90%** | **74,44%** |
 
 ### 4. Avaliar o modelo
 

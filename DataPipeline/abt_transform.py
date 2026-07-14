@@ -12,20 +12,6 @@ def load_clean_data(filepath: str) -> pd.DataFrame:
     return pd.read_csv(filepath)
 
 
-def sanitize_column_names(df: pd.DataFrame) -> pd.DataFrame:
-    # LightGBM rejeita nomes com caracteres especiais JSON (ex: ":" em
-    # "ORGANIZATION_TYPE_Industry: type 1" gerado pelo get_dummies).
-    import re
-    df.columns = [re.sub(r'[:\[\]{}".,\s]+', '_', c).strip('_') for c in df.columns]
-    return df
-
-
-def encode_categorical(df: pd.DataFrame) -> pd.DataFrame:
-    # Reproduz exatamente pd.get_dummies(X, drop_first=True) do notebook original.
-    encoded = pd.get_dummies(df, drop_first=True)
-    return sanitize_column_names(encoded)
-
-
 def run_transform(
     config_path: str = "DataPipeline/config.yaml",
     use_minio: bool = False,
@@ -39,32 +25,27 @@ def run_transform(
     else:
         df = load_clean_data(cfg["paths"]["clean_data"])
 
-    X = df.drop(columns=["TARGET"])
-    y = df["TARGET"]
+    assert "TARGET" in df.columns, "TARGET não encontrado em clean_data.csv."
+    assert df.shape[0] > 0, "clean_data.csv está vazio."
 
-    X_encoded = encode_categorical(X)
-
-    assert X_encoded.shape[1] > 0, "Encoding não gerou nenhuma coluna. Verifique clean_data.csv."
-    assert X_encoded.shape[0] == df.shape[0], "Encoding alterou o número de linhas inesperadamente."
-
-    # Reconstitui o ABT com TARGET na primeira coluna
-    abt = X_encoded.copy()
-    abt.insert(0, "TARGET", y.values)
+    # Encoding e imputação são realizados pelo ColumnTransformer em Model/train.py,
+    # ajustado exclusivamente nos dados de treino para evitar data leakage.
+    # Este passo valida o clean_data e o persiste como abt.
 
     if use_minio:
-        save_csv(abt, mc["buckets"]["processed_data"], mc["objects"]["abt"])
-        print(f"abt.csv → MinIO ({mc['buckets']['processed_data']}/{mc['objects']['abt']}): {abt.shape}")
+        save_csv(df, mc["buckets"]["processed_data"], mc["objects"]["abt"])
+        print(f"abt.csv → MinIO: {df.shape}")
     else:
         Path(cfg["paths"]["abt"]).parent.mkdir(parents=True, exist_ok=True)
-        abt.to_csv(cfg["paths"]["abt"], index=False)
-        print(f"abt.csv salvo: {abt.shape}  (119 features + TARGET)")
+        df.to_csv(cfg["paths"]["abt"], index=False)
+        print(f"abt.csv salvo: {df.shape}")
 
-    return abt
+    return df
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--minio", action="store_true", help="Lê/escreve via MinIO em vez do sistema de arquivos local")
+    parser.add_argument("--minio", action="store_true", help="Lê/escreve via MinIO")
     args = parser.parse_args()
     run_transform(use_minio=args.minio)

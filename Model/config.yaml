@@ -1,25 +1,66 @@
 split:
-  test_size:    0.2
+  test_size:    0.20
   random_state: 42
 
-model:
-  name:          lightgbm
-  n_estimators:  100
-  max_depth:     6
-  num_leaves:    63
-  learning_rate: 0.1
-  metric:        binary_logloss
-  random_state:  42
+models:
+  dummy:
+    strategy:     prior
+    random_state: 42
+
+  logistic_regression:
+    max_iter:     1000
+    class_weight: balanced
+    solver:       liblinear
+    random_state: 42
+
+  random_forest:
+    n_estimators:      400
+    max_depth:         14
+    min_samples_split: 40
+    min_samples_leaf:  20
+    max_features:      sqrt
+    class_weight:      balanced_subsample
+    random_state:      42
+    n_jobs:            -1
+
+  xgboost:
+    n_estimators:      600
+    max_depth:         5
+    learning_rate:     0.05
+    subsample:         0.80
+    colsample_bytree:  0.80
+    min_child_weight:  20
+    reg_alpha:         0.10
+    reg_lambda:        1.00
+    random_state:      42
+    n_jobs:            -1
+    tree_method:       hist
+
+  lightgbm:
+    n_estimators:      700
+    learning_rate:     0.04
+    num_leaves:        31
+    max_depth:         -1
+    subsample:         0.80
+    colsample_bytree:  0.80
+    min_child_samples: 40
+    reg_alpha:         0.10
+    reg_lambda:        1.00
+    class_weight:      balanced
+    random_state:      42
+    n_jobs:            -1
 
 artifacts:
-  model:    Model/artifacts/lgbm_balanced_model.joblib
-  features: Model/artifacts/features.joblib
-  medianas: Model/artifacts/medianas.joblib
+  preprocessor: Model/artifacts/preprocessor.joblib
+  model:        Model/artifacts/best_model.joblib
+  features:     Model/artifacts/features.joblib
+  comparison:   Model/artifacts/comparacao_modelos.csv
+  metadata:     Model/artifacts/metadata_modelo.json
 
 minio:
   bucket:  model-artifacts
-  version: v2
+  version: v3
   objects:
-    model:    lgbm_balanced_model.joblib
-    features: features.joblib
-    medianas: medianas.joblib
+    preprocessor: preprocessor.joblib
+    model:        best_model.joblib
+    features:     features.joblib
