@@ -158,6 +158,27 @@ div[data-testid="column"] {
     border-color:     #1F2937 !important;
 }
 
+/* ── Botão secundário (Limpar) — mesmo visual do primário, sem efeito hover ── */
+[data-testid="stBaseButton-secondary"],
+.stButton > button[kind="secondary"] {
+    background-color: #374151 !important;
+    border-color:     #374151 !important;
+    color:            #FFFFFF !important;
+    font-weight:      700;
+    font-size:        1rem;
+    padding:          0.65rem 1.5rem;
+    border-radius:    8px;
+    transition:       none !important;
+}
+[data-testid="stBaseButton-secondary"]:hover,
+.stButton > button[kind="secondary"]:hover {
+    background-color: #374151 !important;
+    border-color:     #374151 !important;
+    color:            #FFFFFF !important;
+    filter:           none !important;
+    opacity:          1 !important;
+}
+
 /* ── Header ── */
 .header-container {
     background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
