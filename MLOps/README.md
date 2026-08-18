@@ -6,7 +6,7 @@ Documentação da infraestrutura MLOps implementada no projeto ProScore Analytic
 
 ## Visão Geral
 
-A camada MLOps do projeto é composta por cinco componentes integrados, orquestrados via `docker-compose.yml` na raiz do projeto:
+A camada MLOps do projeto é composta por cinco componentes integrados, orquestrados via `docker-compose.yml` (disponível tanto na raiz do projeto quanto em `MLOps/docker-compose.yml`):
 
 ```mermaid
 flowchart TD
@@ -157,7 +157,16 @@ extract_data → data_sanitization → abt_transform → train_model
 
 ## Como Subir o Stack Completo
 
+A partir da **raiz do projeto**:
+
 ```bash
+docker-compose up --build
+```
+
+A partir de **MLOps/**:
+
+```bash
+cd MLOps
 docker-compose up --build
 ```
 
@@ -189,11 +198,11 @@ O Recall é a métrica prioritária: o custo de aprovar um inadimplente supera o
 
 ## Roadmap de Desenvolvimento MLOps
 
-A evolução da infraestrutura MLOps segue quatro etapas progressivas. As etapas i) e ii) estão implementadas e entregues neste repositório. As etapas iii) e iv) constituem os próximos passos de desenvolvimento.
+A evolução da infraestrutura MLOps segue quatro etapas progressivas. As etapas i), ii) e v) estão implementadas e entregues neste repositório. As etapas iii) e iv) incluem a implementação base e o roadmap de evolução.
 
 ### i) Containerização e Serving com Docker Compose ✅
 
-Toda a stack de produção é definida em `docker-compose.yml` na raiz do projeto. Um único comando sobe cinco serviços integrados: aplicação Streamlit, MinIO, PostgreSQL, Airflow Webserver e Airflow Scheduler. O modelo é servido em `http://localhost:8501` com fallback local caso o MinIO não esteja disponível.
+Toda a stack de produção é definida em `docker-compose.yml` (raiz) e `MLOps/docker-compose.yml`. Um único comando sobe sete serviços integrados: aplicação Streamlit (`MLOps/app/`), MinIO, PostgreSQL, Airflow Webserver, Airflow Scheduler, minio-init e airflow-init. O modelo é servido em `http://localhost:8501` com fallback local caso o MinIO não esteja disponível.
 
 ### ii) Orquestração do Pipeline com Apache Airflow ✅
 
@@ -233,7 +242,9 @@ Content-Type: application/json
 
 **Motivação técnica:** Separação de responsabilidades entre interface (Streamlit) e serviço de inferência (API REST), permitindo múltiplos consumidores simultâneos e integração via webhook ou batch.
 
-### iv) Monitoramento de Data Drift e Alertas em Produção
+### iv) Monitoramento de Data Drift e Retreinamento Automático ✅
+
+**Implementado em:** `dags/drift_monitoring_dag.py`
 
 **Objetivo:** Detectar automaticamente quando a distribuição dos dados de entrada em produção diverge da distribuição do dataset de treinamento, sinalizando necessidade de retreinamento antes que a acurácia do modelo degrade.
 
@@ -257,7 +268,9 @@ EXT_SOURCE_2, EXT_SOURCE_3, DAYS_BIRTH, AMT_CREDIT, EXT_SOURCE_1_MISSING
 
 ---
 
-### v) Ações Automatizadas a partir das Previsões do Modelo
+### v) Ações Automatizadas a partir das Previsões do Modelo ✅
+
+**Implementado em:** `utils/actions.py` + `MLOps/app/app.py`
 
 **Objetivo:** Fechar o ciclo decisório do negócio conectando as saídas do modelo a fluxos automatizados de aprovação, revisão e enriquecimento de análise — integrando Machine Learning, automação de processos e agentes de IA.
 
@@ -400,13 +413,22 @@ def notificar_analista(probability: float, inputs: dict):
 
 ---
 
-#### Resumo das integrações planejadas
+#### Resumo das integrações implementadas
 
-| Classificação | Ação | Tecnologia | Latência |
-|---|---|---|---|
-| BAIXO RISCO | Webhook para CRM/ERP | `httpx` | < 500 ms |
-| MÉDIO RISCO | Parecer via agente de IA | Anthropic API | 2–5 s |
-| ALTO RISCO | Notificação ao analista | SMTP / Slack API | < 1 s |
-| Deriva detectada | Retreinamento automático | Airflow DAG trigger | assíncrono |
+| Classificação | Ação | Tecnologia | Latência | Status |
+|---|---|---|---|---|
+| BAIXO RISCO | Webhook para CRM/ERP | `httpx` | < 500 ms | ✅ Implementado |
+| MÉDIO RISCO | Parecer via agente de IA | Anthropic API (`claude-sonnet-4-6`) | 2–5 s | ✅ Implementado |
+| ALTO RISCO | Notificação ao analista | Slack Webhook / SMTP | < 1 s | ✅ Implementado |
+| Deriva detectada | Retreinamento automático | Airflow DAG trigger | assíncrono | ✅ Implementado |
 
-Todas as ações são registradas na tabela `predictions` do PostgreSQL para auditoria e rastreabilidade regulatória.
+Variáveis de ambiente necessárias para ativar as integrações:
+
+| Variável | Ação habilitada |
+|---|---|
+| `ANTHROPIC_API_KEY` | Agente de IA para MÉDIO RISCO |
+| `CRM_WEBHOOK_URL` | Webhook de aprovação para BAIXO RISCO |
+| `SLACK_WEBHOOK_URL` | Notificação Slack para ALTO RISCO |
+| `SMTP_HOST` + `ANALISTA_EMAIL` | Notificação por e-mail para ALTO RISCO |
+
+Todas as predições são registradas na tabela `predictions` do PostgreSQL para auditoria e rastreabilidade regulatória.
