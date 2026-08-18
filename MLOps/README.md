@@ -254,3 +254,159 @@ EXT_SOURCE_2, EXT_SOURCE_3, DAYS_BIRTH, AMT_CREDIT, EXT_SOURCE_1_MISSING
 ```
 
 **Justificativa:** O modelo LightGBM Balanced foi treinado com dados do período do dataset Home Credit. Em produção real, variações macroeconômicas (taxa de juros, desemprego) alteram o perfil de risco dos clientes. O KS-test sobre as features de maior ganho detecta essa deriva antes que o Recall do modelo caia abaixo do limiar aceitável.
+
+---
+
+### v) Ações Automatizadas a partir das Previsões do Modelo
+
+**Objetivo:** Fechar o ciclo decisório do negócio conectando as saídas do modelo a fluxos automatizados de aprovação, revisão e enriquecimento de análise — integrando Machine Learning, automação de processos e agentes de IA.
+
+---
+
+#### Fluxo de automação por classificação de risco
+
+```mermaid
+flowchart TD
+    P["predict(inputs)\n{'prediction': 0|1, 'probability': float}"]
+
+    P -->|"prob < 0.30\nBAIXO RISCO"| A["✅ Aprovação automática\nRegistro em predictions\nWebhook → CRM/ERP"]
+    P -->|"0.30 ≤ prob < 0.70\nMÉDIO RISCO"| B["🤖 Agente de IA\nColeta dados complementares\nEmite parecer enriquecido"]
+    P -->|"prob ≥ 0.70\nALTO RISCO"| C["🔴 Bloqueio automático\nNotificação ao analista\nFila de revisão manual"]
+
+    B --> B1["Verifica bureau externo\nRecalcula probabilidade\nSugere limite alternativo"]
+    B1 --> B2["Analista recebe parecer\ncom recomendação fundamentada"]
+
+    C --> C1["E-mail / Slack ao analista\ncom inputs + probabilidade"]
+    C1 --> C2["Analista aprova ou rejeita\nno painel de revisão"]
+```
+
+---
+
+#### Ação 1 — BAIXO RISCO: Aprovação Automática com Notificação ao CRM
+
+**Gatilho:** `probability < 0.30`
+
+**Fluxo:**
+1. A predição é registrada na tabela `predictions` (já implementado em `utils/db.py`)
+2. Um webhook HTTP é disparado para o CRM/ERP da instituição com o resultado e o ID do cliente
+3. O sistema externo libera automaticamente a proposta de crédito sem intervenção humana
+
+**Tecnologia proposta:** `httpx` (cliente HTTP assíncrono) chamado diretamente pelo `app.py` após a predição, ou via DAG Airflow acionada pelo evento de inserção no PostgreSQL.
+
+```python
+# Esboço da integração — chamada após predict()
+import httpx
+
+def notificar_crm(client_id: str, probability: float, approved: bool):
+    httpx.post(
+        url=os.environ["CRM_WEBHOOK_URL"],
+        json={"client_id": client_id, "probability": probability, "approved": approved},
+        timeout=5,
+    )
+```
+
+---
+
+#### Ação 2 — MÉDIO RISCO: Agente de IA para Análise Complementar
+
+**Gatilho:** `0.30 ≤ probability < 0.70`
+
+**Fluxo:**
+1. O resultado intermediário aciona um agente de IA (Claude via Anthropic API ou LangChain)
+2. O agente recebe os inputs do cliente + a probabilidade calculada e realiza tarefas complementares:
+   - Consulta dados de bureau externo (quando disponível via API)
+   - Avalia o perfil de risco com base em critérios regulatórios (Basileia III, resolução CMN 4.966)
+   - Gera um parecer em linguagem natural com justificativas e recomendação de limite alternativo
+3. O parecer é enviado ao analista de crédito responsável (e-mail ou painel interno)
+4. O analista toma a decisão final com informação enriquecida
+
+**Tecnologia proposta:** Anthropic API (`claude-sonnet-4-6`) com prompt estruturado contendo os dados do cliente e as features mais relevantes do modelo.
+
+```python
+# Esboço da chamada ao agente de IA
+import anthropic
+
+def gerar_parecer_agente(inputs: dict, probability: float) -> str:
+    client = anthropic.Anthropic()
+    prompt = f"""
+    Você é um analista de crédito sênior. Avalie o seguinte perfil:
+    - Renda anual: R$ {inputs['AMT_INCOME_TOTAL']:,.0f}
+    - Crédito solicitado: R$ {inputs['AMT_CREDIT']:,.0f}
+    - Probabilidade de inadimplência (modelo LightGBM): {probability:.1%}
+    - Scores externos: EXT_SOURCE_1={inputs.get('EXT_SOURCE_1')}, EXT_SOURCE_2={inputs.get('EXT_SOURCE_2')}, EXT_SOURCE_3={inputs.get('EXT_SOURCE_3')}
+
+    Com base nesses dados, forneça:
+    1. Avaliação dos fatores de risco predominantes
+    2. Recomendação: aprovar, negar ou sugerir limite alternativo
+    3. Justificativa em linguagem adequada para registro regulatório
+    """
+    message = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=512,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return message.content[0].text
+```
+
+---
+
+#### Ação 3 — ALTO RISCO: Bloqueio Automático e Fila de Revisão Manual
+
+**Gatilho:** `probability ≥ 0.70`
+
+**Fluxo:**
+1. A proposta de crédito é bloqueada automaticamente — nenhuma aprovação é emitida sem revisão humana
+2. Uma notificação é disparada para o analista de crédito responsável (e-mail via SendGrid ou mensagem via Slack API) com:
+   - Inputs do cliente
+   - Probabilidade de inadimplência
+   - Link para o painel de revisão manual
+3. O caso entra em uma fila de revisão priorizada por probabilidade descendente
+4. O analista registra a decisão final (aprovação com ressalvas ou recusa) no painel, e o resultado é gravado no PostgreSQL
+
+**Tecnologia proposta:** `smtplib` / SendGrid para e-mail; Slack Incoming Webhooks para notificação em canal dedicado.
+
+```python
+# Esboço da notificação ao analista
+import smtplib
+from email.message import EmailMessage
+
+def notificar_analista(probability: float, inputs: dict):
+    msg = EmailMessage()
+    msg["Subject"] = f"[CreditGuard] ALTO RISCO — {probability:.1%} de inadimplência"
+    msg["From"] = os.environ["SMTP_FROM"]
+    msg["To"] = os.environ["ANALISTA_EMAIL"]
+    msg.set_content(
+        f"Cliente com risco elevado detectado.\n"
+        f"Probabilidade: {probability:.1%}\n"
+        f"Renda: R$ {inputs['AMT_INCOME_TOTAL']:,.0f} | Crédito: R$ {inputs['AMT_CREDIT']:,.0f}\n"
+        f"Acesse o painel para revisão: http://localhost:8501"
+    )
+    with smtplib.SMTP(os.environ["SMTP_HOST"]) as s:
+        s.send_message(msg)
+```
+
+---
+
+#### Ação 4 — Deriva Detectada: Retreinamento Automático e Substituição do Modelo
+
+**Gatilho:** DAG Airflow semanal detecta KS-statistic > 0.1 em feature crítica
+
+**Fluxo:**
+1. A DAG de monitoramento compara a distribuição das features em `predictions` (produção) com a distribuição do treino salva em `Model/artifacts/`
+2. Se deriva confirmada: a DAG `creditguard_pipeline` é acionada automaticamente (via Airflow trigger)
+3. O novo modelo é avaliado contra o LightGBM v3 atual (ROC-AUC e Recall no conjunto de teste)
+4. Se o novo modelo for superior: artefatos são versionados no MinIO (`v4/`), `model_registry` é atualizado com `is_active=True` e a variável de ambiente `MODEL_VERSION` é atualizada
+5. O modelo antigo permanece no MinIO para rollback, com `is_active=False`
+
+---
+
+#### Resumo das integrações planejadas
+
+| Classificação | Ação | Tecnologia | Latência |
+|---|---|---|---|
+| BAIXO RISCO | Webhook para CRM/ERP | `httpx` | < 500 ms |
+| MÉDIO RISCO | Parecer via agente de IA | Anthropic API | 2–5 s |
+| ALTO RISCO | Notificação ao analista | SMTP / Slack API | < 1 s |
+| Deriva detectada | Retreinamento automático | Airflow DAG trigger | assíncrono |
+
+Todas as ações são registradas na tabela `predictions` do PostgreSQL para auditoria e rastreabilidade regulatória.
