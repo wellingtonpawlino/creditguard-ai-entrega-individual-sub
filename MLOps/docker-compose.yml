@@ -1,6 +1,6 @@
 x-airflow-common: &airflow-common
   build:
-    context: .
+    context: ..
     dockerfile: Dockerfile.airflow
   environment: &airflow-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -10,11 +10,11 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     PYTHONPATH: /opt/airflow
   volumes:
-    - ./dags:/opt/airflow/dags
-    - ./DataPipeline:/opt/airflow/DataPipeline
-    - ./Model:/opt/airflow/Model
-    - ./utils:/opt/airflow/utils
-    - ./Dados:/opt/airflow/Dados
+    - ../dags:/opt/airflow/dags
+    - ../DataPipeline:/opt/airflow/DataPipeline
+    - ../Model:/opt/airflow/Model
+    - ../utils:/opt/airflow/utils
+    - ../Dados:/opt/airflow/Dados
     - airflow_logs:/opt/airflow/logs
   depends_on:
     postgres:
@@ -24,7 +24,7 @@ services:
 
   creditguard-app:
     build:
-      context: .
+      context: ..
       dockerfile: MLOps/app/Dockerfile
     ports:
       - "8501:8501"
@@ -95,7 +95,7 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../infra/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U creditguard"]
       interval: 10s
