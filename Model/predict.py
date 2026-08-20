@@ -1,4 +1,5 @@
 import io
+import math
 import os
 import sys
 import joblib
@@ -87,10 +88,16 @@ def _enrich_input(data: dict) -> dict:
         out["AGE_YEARS"] = -days_birth / 365.25
 
     days_emp = out.get("DAYS_EMPLOYED")
-    if days_emp is not None and days_emp != 365243:
-        out["EMPLOYED_YEARS"] = -days_emp / 365.25
-        if out.get("AGE_YEARS") is not None:
-            out["EMPLOYED_AGE_RATIO"] = _safe_div(out["EMPLOYED_YEARS"], out["AGE_YEARS"])
+    if days_emp is not None:
+        if days_emp == 365243:
+            # Sentinela do dataset original: cliente sem vínculo empregatício ativo.
+            # Reproduz o comportamento de data_sanitization.py (valor → NaN).
+            out["EMPLOYED_YEARS"] = math.nan
+            out["EMPLOYED_AGE_RATIO"] = math.nan
+        else:
+            out["EMPLOYED_YEARS"] = -days_emp / 365.25
+            if out.get("AGE_YEARS") is not None:
+                out["EMPLOYED_AGE_RATIO"] = _safe_div(out["EMPLOYED_YEARS"], out["AGE_YEARS"])
 
     return out
 

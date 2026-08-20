@@ -1,5 +1,8 @@
+import logging
 import os
 import psycopg2
+
+logger = logging.getLogger(__name__)
 
 
 def get_connection():
@@ -43,8 +46,8 @@ def log_prediction(inputs: dict, result: dict, model_version: str = "v3") -> Non
         conn.commit()
         cur.close()
         conn.close()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("log_prediction falhou: %s", e)
 
 
 def register_model(
@@ -90,5 +93,5 @@ def register_model(
         conn.commit()
         cur.close()
         conn.close()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error("register_model falhou: %s", e)

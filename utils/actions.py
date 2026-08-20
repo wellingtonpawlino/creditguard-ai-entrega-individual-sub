@@ -125,6 +125,7 @@ def _notificar_email(smtp_host: str, inputs: dict, probability: float) -> bool:
         )
         smtp_port = int(os.environ.get("SMTP_PORT", "587"))
         with smtplib.SMTP(smtp_host, smtp_port) as s:
+            s.starttls()
             s.send_message(msg)
         logger.info("E-mail de alto risco enviado.")
         return True

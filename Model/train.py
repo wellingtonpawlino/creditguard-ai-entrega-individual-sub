@@ -17,6 +17,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     roc_auc_score,
     average_precision_score,
+    accuracy_score,
     precision_score,
     recall_score,
     f1_score,
@@ -103,6 +104,7 @@ def train_and_compare_models(X_train, y_train, X_test, y_test, cfg: dict):
             "Precision_Classe_1": float(precision_score(y_test, pred, zero_division=0)),
             "Recall_Classe_1": float(recall_score(y_test, pred, zero_division=0)),
             "F1_Classe_1": float(f1_score(y_test, pred, zero_division=0)),
+            "Acuracia": float(accuracy_score(y_test, pred)),
             "Tempo_Treinamento_Segundos": round(elapsed, 2),
         }
         results.append(row)
@@ -243,6 +245,8 @@ def run_training(
                 "roc_auc": float(best_row["ROC_AUC"]),
                 "recall": float(best_row["Recall_Classe_1"]),
                 "precision": float(best_row["Precision_Classe_1"]),
+                "f1": float(best_row["F1_Classe_1"]),
+                "accuracy": float(best_row["Acuracia"]),
             },
             description=best_model_name,
             artifact_bucket=mc.get("bucket", "model-artifacts"),

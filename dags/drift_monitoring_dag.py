@@ -37,7 +37,8 @@ def check_data_drift(**context):
     import psycopg2
     from scipy import stats
 
-    abt_path = "/opt/airflow/Dados/abt.csv"
+    airflow_home = os.environ.get("AIRFLOW_HOME", "/opt/airflow")
+    abt_path = os.path.join(airflow_home, "Dados", "abt.csv")
     reference = {}
 
     if os.path.exists(abt_path):
