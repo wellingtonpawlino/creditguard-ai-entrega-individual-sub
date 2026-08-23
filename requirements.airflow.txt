@@ -1,6 +1,7 @@
 pandas
 scikit-learn
 lightgbm
+xgboost
 joblib
 pyyaml
 minio
