@@ -20,7 +20,7 @@ __pycache__/
 .vscode/
 
 # Data
-Dados/raw/*.csv
+Dados/raw/
 Dados/abt_full.csv
 
 # Claude Code
