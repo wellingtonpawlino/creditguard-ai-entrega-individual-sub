@@ -229,12 +229,15 @@ def run_training(
     best_model = trained_models[best_model_name]
     print(f"\nMelhor modelo: {best_model_name} (ROC-AUC = {best_row['ROC_AUC']:.4f})")
 
-    save_artifacts(
-        preprocessor, best_model, best_model_name, comparison_df, best_row,
-        X_train.columns.tolist(), X_train, X_test, y_test,
-        trained_models, probabilities_map, predictions_map,
-        model_cfg, use_minio=use_minio,
-    )
+    if n_rows is not None:
+        print(f"\n[MODO DEMO] n_rows={n_rows} — artefatos não sobrescritos.")
+    else:
+        save_artifacts(
+            preprocessor, best_model, best_model_name, comparison_df, best_row,
+            X_train.columns.tolist(), X_train, X_test, y_test,
+            trained_models, probabilities_map, predictions_map,
+            model_cfg, use_minio=use_minio,
+        )
 
     if use_db:
         from utils.db import register_model
