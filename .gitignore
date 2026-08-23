@@ -22,6 +22,11 @@ __pycache__/
 # Data
 Dados/raw/
 Dados/abt_full.csv
+Dados/abt.csv
+Dados/clean_data.csv
+
+# Artifacts grandes (>100MB)
+Model/artifacts/all_models.joblib
 
 # Claude Code
 CLAUDE.md
