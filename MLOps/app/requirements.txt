@@ -1,6 +1,7 @@
 streamlit
 pandas
 joblib
+dill
 lightgbm
 xgboost
 scikit-learn==1.7.0
