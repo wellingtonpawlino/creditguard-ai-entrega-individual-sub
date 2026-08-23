@@ -33,8 +33,8 @@ def _load_config(config_path: str) -> dict:
         return yaml.safe_load(f)
 
 
-def load_abt(filepath: str) -> pd.DataFrame:
-    return pd.read_csv(filepath)
+def load_abt(filepath: str, n_rows: int = None) -> pd.DataFrame:
+    return pd.read_csv(filepath, nrows=n_rows)
 
 
 def split_features_target(df: pd.DataFrame, target_col: str = "TARGET"):
@@ -194,12 +194,13 @@ def run_training(
     pipeline_cfg = _load_config(pipeline_config_path)
     model_cfg = _load_config(model_config_path)
 
+    n_rows = model_cfg["split"].get("n_rows")
     if use_minio:
         from utils.storage import load_csv
         mc = pipeline_cfg["minio"]
         df = load_csv(mc["buckets"]["processed_data"], mc["objects"]["abt"])
     else:
-        df = load_abt(pipeline_cfg["paths"]["abt"])
+        df = load_abt(pipeline_cfg["paths"]["abt"], n_rows=n_rows)
 
     X, y = split_features_target(df)
     X_train, X_test, y_train, y_test = split_train_test(

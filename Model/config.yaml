@@ -1,6 +1,7 @@
 split:
   test_size:    0.20
   random_state: 42
+  n_rows:       null   # null = dataset completo; ex: 20000 para modo demo
 
 models:
   dummy:
